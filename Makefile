@@ -17,5 +17,8 @@ $(OUT): $(OBJS)
 clean:
 	rm -f $(ODIR)/*
 
+make:
+	scan-build make
+
 run: $(OUT)
-	$(OUT)
+	valgrind -q --error-exitcode=123 --leak-check=yes $(OUT)
