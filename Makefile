@@ -1,5 +1,7 @@
 CC=clang
-CFLAGS=-Wall -pedantic-errors -I.
+#CFLAGS=-std=c99 -pedantic-errors -Wall -Wextra -Wshadow -Wpointer-arith \
+ -Wcast-qual -Wstrict-prototypes -Wmissing-prototypes -I.
+CFLAGS=-std=c99 -Weverything
 OUT=target/trejs
 ODIR=target
 SDIR=src
@@ -14,3 +16,6 @@ $(OUT): $(OBJS)
 
 clean:
 	rm -f $(ODIR)/*
+
+run: $(OUT)
+	$(OUT)
