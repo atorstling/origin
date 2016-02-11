@@ -1,0 +1,2 @@
+# trejs
+Trace a command
