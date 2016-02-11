@@ -1,7 +1,7 @@
 CC=clang
 #CFLAGS=-std=c99 -pedantic-errors -Wall -Wextra -Wshadow -Wpointer-arith \
  -Wcast-qual -Wstrict-prototypes -Wmissing-prototypes -I.
-CFLAGS=-std=c99 -Weverything
+CFLAGS=-std=c99 -O0 -g -Weverything -Werror
 OUT=target/trejs
 ODIR=target
 SDIR=src
@@ -21,4 +21,4 @@ make:
 	scan-build make
 
 run: $(OUT)
-	valgrind -q --error-exitcode=123 --leak-check=yes $(OUT)
+	valgrind -q --error-exitcode=123 --leak-check=yes $(OUT) test
