@@ -21,4 +21,4 @@ make:
 	scan-build make
 
 run: $(OUT)
-	valgrind -q --error-exitcode=123 --leak-check=yes $(OUT) test
+	valgrind -q --error-exitcode=123 --leak-check=yes $(OUT) $(ARGS)
