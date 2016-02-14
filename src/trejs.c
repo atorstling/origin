@@ -56,24 +56,29 @@ char* find_in_path(char* command) {
   return match;
 }
 
-char* get_first_group(const regex_t *r, const char* line);
-char* get_first_group(const regex_t *r, const char* line) {
-    regmatch_t m[2]; 
-    if (regexec(r, line, 2, m, 0) == 0) {
-      assert(m[0].rm_so != -1);
-      assert(m[1].rm_eo != -1);
-      unsigned int len = (unsigned int) (m[1].rm_eo - m[1].rm_so);
+char* get_group(const regex_t *r, const char* line, unsigned int group);
+char* get_group(const regex_t *r, const char* line, unsigned int group) {
+    unsigned int ngroups = group+1;
+    regmatch_t *m=alloc(ngroups*sizeof(regmatch_t)); 
+    char* match=NULL;
+    if (regexec(r, line, ngroups, m, 0) == 0) {
+      for(unsigned int i=0; i<ngroups; i++) {
+        assert(m[i].rm_so != -1);
+      }
+      unsigned int len = (unsigned int) (m[group].rm_eo - m[group].rm_so);
       char* alias = alloc(len+1);
-      memcpy(alias, line + m[1].rm_so, len);
+      memcpy(alias, line + m[group].rm_so, len);
       alias[len] = '\0';
-      return alias;
+      match = alias;
     }
-    return NULL;
+    free(m);
+    return match;
 }
 
 typedef struct alias_match{
   char* shell;
   char* declaration;
+  char* alias_for;
 } alias_match;
 
 void free_alias_match(alias_match *m);
@@ -83,6 +88,7 @@ void free_alias_match(alias_match *m) {
   }
   free(m->shell);
   free(m->declaration);
+  free(m->alias_for);
   free(m);
 }
 
@@ -100,7 +106,7 @@ alias_match* find_in_alias(char* command) {
     error(1, errno, "failed to run alias command '%s'", alias_command);
   }
   free(alias_command);
-  const char* alias_pattern = "alias ([^=]+)=";
+  const char* alias_pattern = "alias ([^=]+)='([^ ]+)";
   regex_t r;
   if (regcomp(&r, alias_pattern, REG_EXTENDED) != 0) {
     error(1, errno, "failed to compile regex '%s'", alias_pattern);
@@ -110,14 +116,16 @@ alias_match* find_in_alias(char* command) {
   ssize_t read;
   alias_match *m = NULL;
   while ((read = getline(&line, &rowlen, fp)) != -1) {
-      char* alias=get_first_group(&r, line);
+      char* alias=get_group(&r, line, 1);
       if (alias != NULL) {
         if (strcmp(alias, command) == 0) {
+          char* alias_for=get_group(&r, line, 2);
           m = alloc(sizeof(alias_match));
           m->shell= alloc(strlen(shell)+1);
           m->declaration= alloc(strlen(line)+1);
           strcpy(m->shell, shell);
           strcpy(m->declaration, line);
+          m->alias_for=alias_for;
           free(alias);
           goto cleanup;
         }
