@@ -192,22 +192,29 @@ void find_recursive(char* command);
 void find_recursive(char* command) {
   cmd first = { .name = command, .next = NULL };
   cmd* current = &first;
-  match *m = find(current->name);
-  if (m != NULL) {
-    if (m->alias_match != NULL) {
-      printf("alias in shell %s: %s", m->alias_match->shell, m->alias_match->declaration);
-      if (!already_seen(&first, m->alias_match->alias_for)) {
-        cmd* next = alloc(sizeof(cmd));
-        current->next = next;
-        current = next;
+  int skip_alias=0;
+  while(current != NULL) {
+    printf("looking for %s\n", current->name);
+    match *m = find(current->name);
+    if (m != NULL) {
+      if (m->alias_match != NULL) {
+        printf("alias for '%s' in shell %s: %s", m->alias_match->alias_for, m->alias_match->shell,  m->alias_match->declaration);
+        if (!already_seen(&first, m->alias_match->alias_for)) {
+          current = NULL;
+        } else {
+          skip_alias=1;
+          goto cleanup;
+        }
+      }
+      else if (m->path_match != NULL) {
+        printf("executable %s\n", m->path_match);
+        current=NULL;
       }
     }
-    else if (m->path_match != NULL) {
-      printf("executable %s\n", m->path_match);
-    }
+    skip_alias=0;
+    cleanup:
+    free_match(m);
   }
-  free_match(m);
-
 }
 
 int main(int argc, char** argv)
