@@ -1,7 +1,7 @@
 CC=clang
 #CFLAGS=-std=c99 -pedantic-errors -Wall -Wextra -Wshadow -Wpointer-arith \
  -Wcast-qual -Wstrict-prototypes -Wmissing-prototypes -I.
-CFLAGS=-std=c99 -O0 -g -Weverything -Werror
+CFLAGS=-std=c99 -O0 -g -D_POSIX_C_SOURCE=200809L -Weverything -Werror
 OUT=target/trejs
 ODIR=target
 SDIR=src
