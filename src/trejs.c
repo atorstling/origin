@@ -171,21 +171,51 @@ match *find(char* command) {
 }
 
 
-int main(int argc, char** argv)
-{
-  if (argc < 2) {
-    error(1, errno, "missing command name");
+typedef struct cmd {
+  char* name;
+  struct cmd* next;
+} cmd;
+
+int already_seen(cmd* first, char* name);
+int already_seen(cmd* first, char* name) {
+  cmd* current = first;
+  while(current != NULL) {
+    if(strcmp(name, current->name)==0) {
+      return 1;
+    }
+    current=current->next;
   }
-  char* command = argv[1];
-  match *m = find(command);
+  return 0;
+}
+
+void find_recursive(char* command);
+void find_recursive(char* command) {
+  cmd first = { .name = command, .next = NULL };
+  cmd* current = &first;
+  match *m = find(current->name);
   if (m != NULL) {
     if (m->alias_match != NULL) {
       printf("alias in shell %s: %s", m->alias_match->shell, m->alias_match->declaration);
+      if (!already_seen(&first, m->alias_match->alias_for)) {
+        cmd* next = alloc(sizeof(cmd));
+        current->next = next;
+        current = next;
+      }
     }
     else if (m->path_match != NULL) {
       printf("executable %s\n", m->path_match);
     }
   }
   free_match(m);
+
+}
+
+int main(int argc, char** argv)
+{
+  if (argc < 2) {
+    error(1, errno, "missing command name");
+  }
+  char* command = argv[1];
+  find_recursive(command);
   return 0;
 }
