@@ -106,7 +106,7 @@ alias_match* find_in_alias(char* command) {
     error(1, errno, "failed to run alias command '%s'", alias_command);
   }
   free(alias_command);
-  const char* alias_pattern = "alias ([^=]+)='([^ ]+)";
+  const char* alias_pattern = "(alias ([^=]+)='([^ ]+).*)$";
   regex_t r;
   if (regcomp(&r, alias_pattern, REG_EXTENDED) != 0) {
     error(1, errno, "failed to compile regex '%s'", alias_pattern);
@@ -116,15 +116,15 @@ alias_match* find_in_alias(char* command) {
   ssize_t read;
   alias_match *m = NULL;
   while ((read = getline(&line, &rowlen, fp)) != -1) {
-      char* alias=get_group(&r, line, 1);
+      char* alias=get_group(&r, line, 2);
       if (alias != NULL) {
         if (strcmp(alias, command) == 0) {
-          char* alias_for=get_group(&r, line, 2);
+          char* alias_for=get_group(&r, line, 3);
+          char* declaration=get_group(&r, line, 1);
           m = alloc(sizeof(alias_match));
           m->shell= alloc(strlen(shell)+1);
-          m->declaration= alloc(strlen(line)+1);
           strcpy(m->shell, shell);
-          strcpy(m->declaration, line);
+          m->declaration=declaration;
           m->alias_for=alias_for;
           free(alias);
           goto cleanup;
@@ -178,6 +178,7 @@ typedef struct cmd {
 
 int already_seen(cmd* first, char* name);
 int already_seen(cmd* first, char* name) {
+  printf("name: %s\n", name);
   cmd* current = first;
   while(current != NULL) {
     if(strcmp(name, current->name)==0) {
@@ -188,33 +189,65 @@ int already_seen(cmd* first, char* name) {
   return 0;
 }
 
+cmd* mk_cmd(char* name, cmd* next);
+cmd* mk_cmd(char* name, cmd* next) {
+  cmd* c = alloc(sizeof(cmd));
+  c->name = strdup(name);
+  c->next = next;
+  return c;
+}
+
+cmd* maybe_mk_cmd(char* name, cmd* next);
+cmd* maybe_mk_cmd(char* name, cmd* next) {
+  if (name == NULL) {
+    return NULL;
+  }
+  return mk_cmd(name, next);
+}
+
+void free_cmds(cmd* first);
+void free_cmds(cmd* first) {
+  cmd* current = first;
+  while(current != NULL) {
+    free(current->name);
+    cmd* next = current->next;
+    free(current);
+    current = next;
+  } 
+}
+
 void find_recursive(char* command);
 void find_recursive(char* command) {
-  cmd first = { .name = command, .next = NULL };
-  cmd* current = &first;
-  int skip_alias=0;
+  cmd *first = mk_cmd(command, NULL);
+  cmd* current = first;
   while(current != NULL) {
-    printf("looking for %s\n", current->name);
+    printf("looking for '%s'\n", current->name);
     match *m = find(current->name);
-    if (m != NULL) {
-      if (m->alias_match != NULL) {
-        printf("alias for '%s' in shell %s: %s", m->alias_match->alias_for, m->alias_match->shell,  m->alias_match->declaration);
-        if (!already_seen(&first, m->alias_match->alias_for)) {
-          current = NULL;
-        } else {
-          skip_alias=1;
-          goto cleanup;
-        }
-      }
-      else if (m->path_match != NULL) {
-        printf("executable %s\n", m->path_match);
-        current=NULL;
-      }
+    if (m==NULL) {
+      printf("no match\n");
+      break;
     }
-    skip_alias=0;
-    cleanup:
+    char* next_name = NULL;
+    if (m->alias_match != NULL) {
+      printf("alias for '%s' in shell %s: %s\n", m->alias_match->alias_for, m->alias_match->shell,  m->alias_match->declaration);
+      next_name = m->alias_match->alias_for;
+    }
+    else if (m->path_match != NULL) {
+      printf("executable %s\n", m->path_match);
+      next_name = NULL;
+    }
+    if (next_name == NULL) {
+      printf("done\n");
+    } else if (already_seen(first, next_name)) {
+      printf("already searched for %s, aborting\n", next_name);
+      next_name = NULL; 
+    }
+    cmd* next = maybe_mk_cmd(next_name, NULL);
+    current->next = next;
+    current = next; 
     free_match(m);
   }
+  free_cmds(first);
 }
 
 int main(int argc, char** argv)
