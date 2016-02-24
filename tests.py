@@ -14,7 +14,7 @@ def run(cmd):
 # non-existent
 print check("miss", "no match");
 # multi-level alias
-print check("ll", "already searched for ls, aborting");
+print check("ll", "'ls' is executable /bin/ls");
 # executable without indirection
 print check("uname", "executable /bin/uname");
 # built-in 

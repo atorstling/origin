@@ -199,19 +199,20 @@ typedef struct cmd {
   char* name;
   struct cmd* next;
   unsigned int done;
-  char buf[4];
+  unsigned int match_type;
 } cmd;
 
-int already_seen(cmd* first, char* name);
-int already_seen(cmd* first, char* name) {
+unsigned int found_as(cmd* first, char* name);
+unsigned int found_as(cmd* first, char* name) {
   cmd* current = first;
+  unsigned int matches = 0;
   while(current != NULL) {
     if(strcmp(name, current->name)==0 && current->done) {
-      return 1;
+      matches |= current->match_type;
     }
     current=current->next;
   }
-  return 0;
+  return matches;
 }
 
 cmd* mk_cmd(char* name, cmd* next);
@@ -248,11 +249,8 @@ void find_recursive(char* command) {
   cmd* current = first;
   while(current != NULL) {
     printf("looking for '%s'\n", current->name);
-    if (already_seen(first, current->name)) {
-      printf("already searched for %s, aborting\n", current->name);
-      break;
-    }
-    match *m = find(current->name, 0);
+    unsigned int bans = found_as(first, current->name);
+    match *m = find(current->name, bans);
     if (m==NULL) {
       printf("no match\n");
       break;
@@ -267,10 +265,12 @@ void find_recursive(char* command) {
       } else if(tm->builtin_match) {
         printf("'%s' is a shell builtin\n", current->name);
       }
+      current->match_type=FIND_TYPE;
     }
     else if (m->path_match != NULL) {
       printf("'%s' is executable %s\n", current->name, m->path_match);
       next_name = NULL;
+      current->match_type=FIND_PATH;
     }
     if (next_name == NULL) {
       printf("done\n");
