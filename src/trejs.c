@@ -99,14 +99,18 @@ alias_match* find_in_alias(char* command) {
   if (shell == NULL) {
     error(1, errno, "failed to read 'SHELL' environment variable");
   }
-  char* alias_command = alloc(strlen(shell) + 15);
-  sprintf(alias_command, "%s -ic alias", shell);
+  printf("shell is '%s'\n", shell);
+  printf("command is '%s'\n", command);
+  printf("shell '%s' command '%s'", shell, command);
+  const char* template = "%s -ic 'type %s'";
+  char* alias_command = alloc(strlen(shell) + strlen(command) + strlen(template));
+  sprintf(alias_command, template, shell, command);
   FILE *fp = popen(alias_command, "r");
   if (fp == NULL) {
     error(1, errno, "failed to run alias command '%s'", alias_command);
   }
   free(alias_command);
-  const char* alias_pattern = "(alias ([^=]+)='([^ ]+).*)$";
+  const char* alias_pattern = ".*is aliased to `(([^' ]*) [^']*)'";
   regex_t r;
   if (regcomp(&r, alias_pattern, REG_EXTENDED) != 0) {
     error(1, errno, "failed to compile regex '%s'", alias_pattern);
@@ -116,21 +120,17 @@ alias_match* find_in_alias(char* command) {
   ssize_t read;
   alias_match *m = NULL;
   while ((read = getline(&line, &rowlen, fp)) != -1) {
-      char* alias=get_group(&r, line, 2);
-      if (alias != NULL) {
-        if (strcmp(alias, command) == 0) {
-          char* alias_for=get_group(&r, line, 3);
-          char* declaration=get_group(&r, line, 1);
-          m = alloc(sizeof(alias_match));
-          m->shell= alloc(strlen(shell)+1);
-          strcpy(m->shell, shell);
-          m->declaration=declaration;
-          m->alias_for=alias_for;
-          free(alias);
-          goto cleanup;
-        }
-        free(alias);
+      char* alias_for=get_group(&r, line, 2);
+      if (alias_for != NULL) {
+        char* declaration=get_group(&r, line, 1);
+        m = alloc(sizeof(alias_match));
+        m->shell= alloc(strlen(shell)+1);
+        strcpy(m->shell, shell);
+        m->declaration=declaration;
+        m->alias_for=alias_for;
+        goto cleanup;
       }
+      free(alias_for);
   }
   cleanup:
   free(line);
@@ -167,6 +167,7 @@ match *find(char* command) {
   if (m->path_match != NULL) {
     return m;
   }
+  free(m);
   return NULL;
 }
 
