@@ -75,14 +75,16 @@ char* get_group(const regex_t *r, const char* line, unsigned int group) {
     return match;
 }
 
-typedef struct alias_match{
+typedef struct type_match{
   char* shell;
   char* declaration;
   char* alias_for;
-} alias_match;
+} type_match;
 
-void free_alias_match(alias_match *m);
-void free_alias_match(alias_match *m) {
+
+
+void free_type_match(type_match *m);
+void free_type_match(type_match *m) {
   if (m == NULL) {
     return;
   }
@@ -93,15 +95,12 @@ void free_alias_match(alias_match *m) {
 }
 
 
-alias_match* find_in_alias(char*);
-alias_match* find_in_alias(char* command) {
+type_match* find_type(char*);
+type_match* find_type(char* command) {
   char* shell = getenv("SHELL");
   if (shell == NULL) {
     error(1, errno, "failed to read 'SHELL' environment variable");
   }
-  printf("shell is '%s'\n", shell);
-  printf("command is '%s'\n", command);
-  printf("shell '%s' command '%s'", shell, command);
   const char* template = "%s -ic 'type %s'";
   char* alias_command = alloc(strlen(shell) + strlen(command) + strlen(template));
   sprintf(alias_command, template, shell, command);
@@ -111,19 +110,23 @@ alias_match* find_in_alias(char* command) {
   }
   free(alias_command);
   const char* alias_pattern = ".*is aliased to `(([^' ]*) [^']*)'";
-  regex_t r;
-  if (regcomp(&r, alias_pattern, REG_EXTENDED) != 0) {
+  regex_t alias_r;
+  if (regcomp(&alias_r, alias_pattern, REG_EXTENDED) != 0) {
     error(1, errno, "failed to compile regex '%s'", alias_pattern);
   }
   char* line = NULL;
   size_t rowlen = 0;
   ssize_t read;
-  alias_match *m = NULL;
+  type_match *m = NULL;
   while ((read = getline(&line, &rowlen, fp)) != -1) {
-      char* alias_for=get_group(&r, line, 2);
+      if(strstr(line, "is a shell builtin")) {
+        printf("shell builtin\n"); 
+        goto cleanup;
+      }
+      char* alias_for=get_group(&alias_r, line, 2);
       if (alias_for != NULL) {
-        char* declaration=get_group(&r, line, 1);
-        m = alloc(sizeof(alias_match));
+        char* declaration=get_group(&alias_r, line, 1);
+        m = alloc(sizeof(type_match));
         m->shell= alloc(strlen(shell)+1);
         strcpy(m->shell, shell);
         m->declaration=declaration;
@@ -134,13 +137,13 @@ alias_match* find_in_alias(char* command) {
   }
   cleanup:
   free(line);
-  regfree(&r);
+  regfree(&alias_r);
   pclose(fp);
   return m;
 }
 
 typedef struct match {
-  alias_match *alias_match;
+  type_match *type_match;
   char* path_match;
 } match;
 
@@ -149,7 +152,7 @@ void free_match(match* m) {
   if (m == NULL) {
     return;
   }
-  free_alias_match(m->alias_match);
+  free_type_match(m->type_match);
   free2(m->path_match);
   free(m);
 }
@@ -157,10 +160,10 @@ void free_match(match* m) {
 match *find(char* command);
 match *find(char* command) {
   match* m = alloc(sizeof(match));
-  m->alias_match=NULL;
+  m->type_match=NULL;
   m->path_match=NULL;
-  m->alias_match = find_in_alias(command);
-  if (m->alias_match != NULL) {
+  m->type_match = find_type(command);
+  if (m->type_match != NULL) {
     return m;
   }
   m->path_match = find_in_path(command);
@@ -229,9 +232,9 @@ void find_recursive(char* command) {
       break;
     }
     char* next_name = NULL;
-    if (m->alias_match != NULL) {
-      printf("alias for '%s' in shell %s: %s\n", m->alias_match->alias_for, m->alias_match->shell,  m->alias_match->declaration);
-      next_name = m->alias_match->alias_for;
+    if (m->type_match != NULL) {
+      printf("alias for '%s' in shell %s: %s\n", m->type_match->alias_for, m->type_match->shell,  m->type_match->declaration);
+      next_name = m->type_match->alias_for;
     }
     else if (m->path_match != NULL) {
       printf("executable %s\n", m->path_match);

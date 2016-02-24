@@ -17,5 +17,7 @@ print check("miss", "no match");
 print check("ll", "already searched for ls, aborting");
 # executable without indirection
 print check("true", "executable /bin/true");
+# built-in 
+print check("type", "shell builtin");
 
 print "OK"
