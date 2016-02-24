@@ -16,8 +16,8 @@ print check("miss", "no match");
 # multi-level alias
 print check("ll", "already searched for ls, aborting");
 # executable without indirection
-print check("true", "executable /bin/true");
+print check("uname", "executable /bin/uname");
 # built-in 
-print check("type", "shell builtin");
+print check("type", "'type' is a shell builtin");
 
 print "OK"
