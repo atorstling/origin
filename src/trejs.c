@@ -75,12 +75,15 @@ char* get_group(const regex_t *r, const char* line, unsigned int group) {
     return match;
 }
 
-typedef struct type_match{
+typedef struct alias_match{
   char* shell;
   char* declaration;
   char* alias_for;
-} type_match;
+} alias_match;
 
+typedef struct type_match{
+  alias_match* alias_match;
+} type_match;
 
 
 void free_type_match(type_match *m);
@@ -88,9 +91,13 @@ void free_type_match(type_match *m) {
   if (m == NULL) {
     return;
   }
-  free(m->shell);
-  free(m->declaration);
-  free(m->alias_for);
+  if (m->alias_match != NULL) {
+    alias_match* ma = m->alias_match;
+    free(ma->shell);
+    free(ma->declaration);
+    free(ma->alias_for);
+    free(ma);
+  }
   free(m);
 }
 
@@ -126,11 +133,13 @@ type_match* find_type(char* command) {
       char* alias_for=get_group(&alias_r, line, 2);
       if (alias_for != NULL) {
         char* declaration=get_group(&alias_r, line, 1);
+        alias_match *am = alloc(sizeof(alias_match));
+        am->shell= alloc(strlen(shell)+1);
+        strcpy(am->shell, shell);
+        am->declaration=declaration;
+        am->alias_for=alias_for;
         m = alloc(sizeof(type_match));
-        m->shell= alloc(strlen(shell)+1);
-        strcpy(m->shell, shell);
-        m->declaration=declaration;
-        m->alias_for=alias_for;
+        m->alias_match = am;
         goto cleanup;
       }
       free(alias_for);
@@ -233,8 +242,12 @@ void find_recursive(char* command) {
     }
     char* next_name = NULL;
     if (m->type_match != NULL) {
-      printf("alias for '%s' in shell %s: %s\n", m->type_match->alias_for, m->type_match->shell,  m->type_match->declaration);
-      next_name = m->type_match->alias_for;
+      type_match * tm = m->type_match;
+      if (tm->alias_match != NULL) {
+        alias_match* am = tm->alias_match;
+        printf("alias for '%s' in shell %s: %s\n", am->alias_for, am->shell,  am->declaration);
+        next_name = am->alias_for;
+      }
     }
     else if (m->path_match != NULL) {
       printf("executable %s\n", m->path_match);
