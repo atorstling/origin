@@ -170,18 +170,25 @@ void free_match(match* m) {
   free(m);
 }
 
-match *find(char* command);
-match *find(char* command) {
+static unsigned int FIND_TYPE=1<<0;
+static unsigned int FIND_PATH=1<<1;
+
+match *find(char* command, unsigned int bans);
+match *find(char* command, unsigned int bans) {
   match* m = alloc(sizeof(match));
   m->type_match=NULL;
   m->path_match=NULL;
-  m->type_match = find_type(command);
-  if (m->type_match != NULL) {
-    return m;
+  if ((bans & FIND_TYPE) == 0) {
+    m->type_match = find_type(command);
+    if (m->type_match != NULL) {
+      return m;
+    }
   }
-  m->path_match = find_in_path(command);
-  if (m->path_match != NULL) {
-    return m;
+  if ((bans & FIND_PATH) == 0) {
+    m->path_match = find_in_path(command);
+    if (m->path_match != NULL) {
+      return m;
+    }
   }
   free(m);
   return NULL;
@@ -191,14 +198,15 @@ match *find(char* command) {
 typedef struct cmd {
   char* name;
   struct cmd* next;
+  unsigned int done;
+  char buf[4];
 } cmd;
 
 int already_seen(cmd* first, char* name);
 int already_seen(cmd* first, char* name) {
-  printf("name: %s\n", name);
   cmd* current = first;
   while(current != NULL) {
-    if(strcmp(name, current->name)==0) {
+    if(strcmp(name, current->name)==0 && current->done) {
       return 1;
     }
     current=current->next;
@@ -211,6 +219,7 @@ cmd* mk_cmd(char* name, cmd* next) {
   cmd* c = alloc(sizeof(cmd));
   c->name = strdup(name);
   c->next = next;
+  c->done = 0;
   return c;
 }
 
@@ -239,7 +248,11 @@ void find_recursive(char* command) {
   cmd* current = first;
   while(current != NULL) {
     printf("looking for '%s'\n", current->name);
-    match *m = find(current->name);
+    if (already_seen(first, current->name)) {
+      printf("already searched for %s, aborting\n", current->name);
+      break;
+    }
+    match *m = find(current->name, 0);
     if (m==NULL) {
       printf("no match\n");
       break;
@@ -249,22 +262,20 @@ void find_recursive(char* command) {
       type_match * tm = m->type_match;
       if (tm->alias_match != NULL) {
         alias_match* am = tm->alias_match;
-        printf("'%s' is an alias for '%s' in shell %s: %s\n", command, am->alias_for, am->shell,  am->declaration);
+        printf("'%s' is an alias for '%s' in shell %s: %s\n", current->name, am->alias_for, am->shell,  am->declaration);
         next_name = am->alias_for;
       } else if(tm->builtin_match) {
-        printf("'%s' is a shell builtin\n", command);
+        printf("'%s' is a shell builtin\n", current->name);
       }
     }
     else if (m->path_match != NULL) {
-      printf("'%s' is executable %s\n", command, m->path_match);
+      printf("'%s' is executable %s\n", current->name, m->path_match);
       next_name = NULL;
     }
     if (next_name == NULL) {
       printf("done\n");
-    } else if (already_seen(first, next_name)) {
-      printf("already searched for %s, aborting\n", next_name);
-      next_name = NULL; 
     }
+    current->done=1;
     cmd* next = maybe_mk_cmd(next_name, NULL);
     current->next = next;
     current = next; 
