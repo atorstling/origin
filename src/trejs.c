@@ -49,6 +49,7 @@ void free_file_match(file_match* fm) {
 
 typedef struct path_match {
   file_match *fm;
+  char* path_segment;
 } path_match;
 
 void free_path_match(path_match* pm);
@@ -57,6 +58,7 @@ void free_path_match(path_match* pm) {
     return; 
   }
   free_file_match(pm->fm);
+  free(pm->path_segment);
   free(pm);
 }
 
@@ -68,10 +70,11 @@ file_match* mk_file_match(char* path, char* link_to) {
   return fm;
 }
 
-path_match* mk_path_match(file_match* fm);
-path_match* mk_path_match(file_match* fm) {
+path_match* mk_path_match(file_match* fm, char* path_segment);
+path_match* mk_path_match(file_match* fm, char* path_segment) {
   path_match* pm = alloc(sizeof(path_match));
   pm->fm = fm; 
+  pm->path_segment = strdup2(path_segment);
   return pm;
 }
 
@@ -122,7 +125,7 @@ path_match* find_in_path(char* command) {
     file_match* fm = find_file(fpath);
     free(fpath);
     if (fm != NULL) {
-      match = mk_path_match(fm);
+      match = mk_path_match(fm, entry);
       break;
     }
   }
@@ -355,15 +358,16 @@ void find_recursive(char* command) {
       //Command found in path
       current->match_type=FIND_PATH;
       path_match* pm = m->path_match;
+      printf("'%s' found in PATH as '%s'\n", current->name, pm->fm->path);
       if (pm->fm->link_to == NULL) {
-        printf("'%s' found in path as executable '%s'\n", current->name, pm->fm->path);
+        printf("'%s' is an executable\n", pm->fm->path);
         next_name = NULL;
       } else {
-        printf("'%s' found in path as symlink '%s' to '%s'\n", current->name, pm->fm->path, pm->fm->link_to);
+        printf("'%s' is a symlink to '%s'\n", pm->fm->path, pm->fm->link_to);
         next_name = pm->fm->link_to;
       }
     } else if(m->file_match != NULL) {
-      //Command was file
+      //Command was straight up file
       current->match_type=FIND_FILE;
       file_match* fm = m->file_match;
       assert(strcmp(current->name, fm->path) == 0);

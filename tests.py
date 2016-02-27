@@ -15,14 +15,16 @@ def run(cmd):
 # non-existent
 print check("miss", ["no match"]);
 # multi-level alias
-print check("ll", ["'ls' found in path as executable '/bin/ls'"]);
-# executable without indirection
-print check("uname", ["executable '/bin/uname'"]);
+print check("ll", ["'ls' found in PATH as '/bin/ls'",
+                   "'/bin/ls' is an executable"]);
 # built-in 
 print check("type", ["'type' is a shell builtin"]);
-# symlink
+# executable in path 
+print check("uname", ["'/bin/uname' is an executable"]);
+# symlink in path
 print check("sh", 
-            ["'sh' found in path as symlink '/bin/sh' to '/bin/dash'",
+            ["'sh' found in PATH as '/bin/sh'",
+             "'/bin/sh' is a symlink to '/bin/dash'", 
             "'/bin/dash' is an executable"]);
 
 print "OK"
