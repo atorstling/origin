@@ -31,9 +31,24 @@ char* strdup2(const char* str) {
   return duped;
 }
 
-typedef struct path_match {
+
+typedef struct file_match {
   char* path;
   char* link_to;
+} file_match;
+
+void free_file_match(file_match* fm);
+void free_file_match(file_match* fm) {
+  if(fm == NULL) {
+    return;
+  }
+  free(fm->path);
+  free(fm->link_to);
+  free(fm);
+}
+
+typedef struct path_match {
+  file_match *fm;
 } path_match;
 
 void free_path_match(path_match* pm);
@@ -41,21 +56,27 @@ void free_path_match(path_match* pm) {
   if (pm == NULL) {
     return; 
   }
-  free(pm->path);
-  free(pm->link_to);
+  free_file_match(pm->fm);
   free(pm);
 }
 
-path_match* mk_path_match(char* path, char* link_to);
-path_match* mk_path_match(char* path, char* link_to) {
+file_match* mk_file_match(char* path, char* link_to);
+file_match* mk_file_match(char* path, char* link_to) {
+  file_match* fm = alloc(sizeof(file_match));
+  fm->path = path;
+  fm->link_to = link_to;
+  return fm;
+}
+
+path_match* mk_path_match(file_match* fm);
+path_match* mk_path_match(file_match* fm) {
   path_match* pm = alloc(sizeof(path_match));
-  pm->path = path;
-  pm->link_to = link_to;
+  pm->fm = fm; 
   return pm;
 }
 
-path_match* find_file(char* path);
-path_match* find_file(char* path) {
+file_match* find_file(char* path);
+file_match* find_file(char* path) {
   struct stat sb;
   if (lstat(path, &sb) == 0) {
     if (S_ISLNK(sb.st_mode)) {
@@ -64,11 +85,11 @@ path_match* find_file(char* path) {
       if (!realpath(path, actualpath)) {
         error(1, errno, "could not read link '%s'", path);
       }
-      return mk_path_match(strdup2(path), strdup2(actualpath));
+      return mk_file_match(strdup2(path), strdup2(actualpath));
     }
     else if (S_ISREG(sb.st_mode) && (sb.st_mode & S_IXUSR)) {
       //executable
-      return mk_path_match(strdup2(path), NULL);
+      return mk_file_match(strdup2(path), NULL);
     }
   }
   return NULL;
@@ -98,9 +119,10 @@ path_match* find_in_path(char* command) {
     strcpy(fpath, entry);
     strcat(fpath, "/");
     strcat(fpath, command);
-    match = find_file(fpath);
+    file_match* fm = find_file(fpath);
     free(fpath);
-    if (match != NULL) {
+    if (fm != NULL) {
+      match = mk_path_match(fm);
       break;
     }
   }
@@ -208,7 +230,7 @@ type_match* find_type(char* command) {
 }
 
 typedef struct match {
-  path_match* file_match;
+  file_match* file_match;
   type_match *type_match;
   path_match* path_match;
 } match;
@@ -218,7 +240,7 @@ void free_match(match* m) {
   if (m == NULL) {
     return;
   }
-  free_path_match(m->file_match);
+  free_file_match(m->file_match);
   free_type_match(m->type_match);
   free_path_match(m->path_match);
   free(m);
@@ -333,23 +355,24 @@ void find_recursive(char* command) {
       //Command found in path
       current->match_type=FIND_PATH;
       path_match* pm = m->path_match;
-      if (pm->link_to == NULL) {
-        printf("'%s' found in path as executable '%s'\n", current->name, pm->path);
+      if (pm->fm->link_to == NULL) {
+        printf("'%s' found in path as executable '%s'\n", current->name, pm->fm->path);
         next_name = NULL;
       } else {
-        printf("'%s' found in path as symlink '%s' to '%s'\n", current->name, pm->path, pm->link_to);
-        next_name = pm->link_to;
+        printf("'%s' found in path as symlink '%s' to '%s'\n", current->name, pm->fm->path, pm->fm->link_to);
+        next_name = pm->fm->link_to;
       }
     } else if(m->file_match != NULL) {
       //Command was file
       current->match_type=FIND_FILE;
-      path_match* pm = m->file_match;
-      if (pm->link_to == NULL) {
-        printf("'%s' is executable '%s'\n", current->name, pm->path);
+      file_match* fm = m->file_match;
+      assert(strcmp(current->name, fm->path) == 0);
+      if (fm->link_to == NULL) {
+        printf("'%s' is an executable\n", current->name);
         next_name = NULL;
       } else {
-        printf("'%s' is symlink '%s' to '%s'\n", current->name, pm->path, pm->link_to);
-        next_name = pm->link_to;
+        printf("'%s' is a symlink to '%s'\n", current->name, fm->link_to);
+        next_name = fm->link_to;
       }
     }
     if (next_name == NULL) {

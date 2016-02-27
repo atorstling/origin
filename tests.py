@@ -23,6 +23,6 @@ print check("type", ["'type' is a shell builtin"]);
 # symlink
 print check("sh", 
             ["'sh' found in path as symlink '/bin/sh' to '/bin/dash'",
-            "'/bin/dash' is executable '/bin/dash'"]);
+            "'/bin/dash' is an executable"]);
 
 print "OK"
