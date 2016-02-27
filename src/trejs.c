@@ -1,4 +1,5 @@
 #include <sys/stat.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -68,13 +69,11 @@ path_match* find_in_path(char* command) {
     if (lstat(fname, &sb) == 0) {
       if (S_ISLNK(sb.st_mode)) {
         //link
-        char buf[8192];
-        ssize_t read=-1;
-        if ((read = readlink(fname, buf, 8192)) == -1) {
+        char actualpath [PATH_MAX+1];
+        if (!realpath(fname, actualpath)) {
           error(1, errno, "could not read link '%s'", fname);
         }
-        buf[read]='\0';
-        match = mk_path_match(fname, strdup(buf));
+        match = mk_path_match(fname, strdup(actualpath));
         break;
       }
       else if (S_ISREG(sb.st_mode) && (sb.st_mode & S_IXUSR)) {
