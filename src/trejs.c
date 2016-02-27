@@ -95,8 +95,7 @@ char* canonicalize(char* path, struct stat *sb) {
     //linkname can be absolute or relative, see "path_resolution(7)"
     assert(r > 0);
     if (linkname[0]=='/') {
-      free(linkname);
-      return path;
+      return linkname;
     } else {
       char* path2 = strdup(path);
       char* dir = dirname(path2);
@@ -127,8 +126,7 @@ file_match* find_file(char* path) {
 }
 
 
-path_match* find_in_path(char*);
-
+path_match* find_in_path(char* command);
 path_match* find_in_path(char* command) {
   const char* path = getenv("PATH");
   if (path == NULL) {
@@ -379,7 +377,7 @@ int find_recursive(char* command) {
       type_match * tm = m->type_match;
       if (tm->alias_match != NULL) {
         alias_match* am = tm->alias_match;
-        printf("'%s' is an alias for '%s' in shell %s: %s\n", current->name, am->alias_for, am->shell,  am->declaration);
+        printf("'%s' is an alias for '%s' in shell '%s': '%s'\n", current->name, am->alias_for, am->shell,  am->declaration);
         next_name = am->alias_for;
       } else if(tm->builtin_match) {
         printf("'%s' is a shell builtin\n", current->name);
