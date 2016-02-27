@@ -9,12 +9,16 @@
 #include <regex.h>
 #include <assert.h>
 #include <unistd.h>
+#include <libgen.h>
+
+static int EXIT_NO_MATCH=1;
+static int EXIT_OTHER_ERROR=2;
 
 void *alloc(size_t size);
 void *alloc(size_t size) {
   void* m = malloc(size);
   if (!m) {
-    error(1, errno, "failed to allocate memory");
+    error(EXIT_OTHER_ERROR, errno, "failed to allocate memory");
   }
   return m;
 }
@@ -26,7 +30,7 @@ char* strdup2(const char* str) {
   }
   char* duped = strdup(str);
   if (duped == NULL) {
-    error(1, errno, "Unable to duplicate string '%s'", str);
+    error(EXIT_OTHER_ERROR, errno, "Unable to duplicate string '%s'", str);
   } 
   return duped;
 }
@@ -78,17 +82,41 @@ path_match* mk_path_match(file_match* fm, char* path_segment) {
   return pm;
 }
 
+
+char* canonicalize(char* path, struct stat *sb);
+char* canonicalize(char* path, struct stat *sb) {
+    size_t size = (unsigned long) sb->st_size;
+    char* linkname = alloc(size + 1); 
+    long r = readlink(path, linkname, size);
+    if (r == -1) {
+      error(EXIT_OTHER_ERROR, errno, "could not read link '%s'", path);
+    }
+    linkname[r] = '\0';
+    //linkname can be absolute or relative, see "path_resolution(7)"
+    assert(r > 0);
+    if (linkname[0]=='/') {
+      free(linkname);
+      return path;
+    } else {
+      char* path2 = strdup(path);
+      char* dir = dirname(path2);
+      char* template = "%s/%s";
+      char* abs = malloc(strlen(dir) + strlen(linkname) + strlen(template));
+      sprintf(abs, template, dir, linkname);
+      free(linkname); 
+      free(path2);
+      return abs;
+    }
+}
+
 file_match* find_file(char* path);
 file_match* find_file(char* path) {
   struct stat sb;
   if (lstat(path, &sb) == 0) {
     if (S_ISLNK(sb.st_mode)) {
       //link
-      char actualpath [PATH_MAX+1];
-      if (!realpath(path, actualpath)) {
-        error(1, errno, "could not read link '%s'", path);
-      }
-      return mk_file_match(strdup2(path), strdup2(actualpath));
+      char* actualpath = canonicalize(path, &sb);
+      return mk_file_match(strdup2(path), actualpath);
     }
     else if (S_ISREG(sb.st_mode) && (sb.st_mode & S_IXUSR)) {
       //executable
@@ -104,7 +132,7 @@ path_match* find_in_path(char*);
 path_match* find_in_path(char* command) {
   const char* path = getenv("PATH");
   if (path == NULL) {
-    error(1, errno, "could not get PATH environment variable");
+    error(EXIT_OTHER_ERROR, errno, "could not get PATH environment variable");
   } 
   // strtok modifies strings, so copy first
   char* path2 = strdup2(path);
@@ -185,20 +213,20 @@ type_match* find_type(char*);
 type_match* find_type(char* command) {
   char* shell = getenv("SHELL");
   if (shell == NULL) {
-    error(1, errno, "failed to read 'SHELL' environment variable");
+    error(EXIT_OTHER_ERROR, errno, "failed to read 'SHELL' environment variable");
   }
-  const char* template = "%s -ic 'type %s'";
+  const char* template = "%s -ic 'type %s' 2>&1";
   char* alias_command = alloc(strlen(shell) + strlen(command) + strlen(template));
   sprintf(alias_command, template, shell, command);
   FILE *fp = popen(alias_command, "r");
   if (fp == NULL) {
-    error(1, errno, "failed to run alias command '%s'", alias_command);
+    error(EXIT_OTHER_ERROR, errno, "failed to run alias command '%s'", alias_command);
   }
   free(alias_command);
   const char* alias_pattern = ".*is aliased to `(([^' ]*) [^']*)'";
   regex_t alias_r;
   if (regcomp(&alias_r, alias_pattern, REG_EXTENDED) != 0) {
-    error(1, errno, "failed to compile regex '%s'", alias_pattern);
+    error(EXIT_OTHER_ERROR, errno, "failed to compile regex '%s'", alias_pattern);
   }
   char* line = NULL;
   size_t rowlen = 0;
@@ -330,16 +358,19 @@ void free_cmds(cmd* first) {
   } 
 }
 
-void find_recursive(char* command);
-void find_recursive(char* command) {
+
+int find_recursive(char* command);
+int find_recursive(char* command) {
   cmd *first = mk_cmd(command, NULL);
   cmd* current = first;
+  int exit_status=EXIT_SUCCESS;
   while(current != NULL) {
-    printf("looking for '%s'\n", current->name);
+    //printf("looking up '%s'\n", current->name);
     unsigned int bans = found_as(first, current->name);
     match *m = find(current->name, bans);
     if (m==NULL) {
       printf("no match\n");
+      exit_status=EXIT_NO_MATCH;
       break;
     }
     char* next_name = NULL;
@@ -380,7 +411,8 @@ void find_recursive(char* command) {
       }
     }
     if (next_name == NULL) {
-      printf("done\n");
+      printf("target reached\n");
+      exit_status=EXIT_SUCCESS ;
     }
     current->done=1;
     //alloc
@@ -391,14 +423,14 @@ void find_recursive(char* command) {
     free_match(m);
   }
   free_cmds(first);
+  return exit_status;
 }
 
 int main(int argc, char** argv)
 {
   if (argc < 2) {
-    error(1, errno, "missing command name");
+    error(EXIT_OTHER_ERROR, errno, "missing command name");
   }
   char* command = argv[1];
-  find_recursive(command);
-  return 0;
+  return find_recursive(command);
 }

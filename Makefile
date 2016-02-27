@@ -21,5 +21,5 @@ clean:
 make:
 	scan-build make
 
-run: $(OUT)
-	valgrind -q --error-exitcode=123 --leak-check=yes $(OUT) $(ARGS)
+test: $(OUT)
+	./tests.py
