@@ -18,27 +18,40 @@ void *alloc(size_t size) {
   return m;
 }
 
-void free2(void *d);
-void free2(void *d) {
-  if (d!=NULL) {
-    free(d); 
-  }
-}
-
 typedef struct path_match {
   char* path;
   char* link_to;
 } path_match;
 
-char* find_in_path(char*);
+void free_path_match(path_match* pm);
+void free_path_match(path_match* pm) {
+  if (pm == NULL) {
+    return; 
+  }
+  free(pm->path);
+  free(pm->link_to);
+  free(pm);
+}
 
-char* find_in_path(char* command) {
-  char* path = getenv("PATH");
-  char *match = NULL;
+path_match* mk_path_match(char* path, char* link_to);
+path_match* mk_path_match(char* path, char* link_to) {
+  path_match* pm = alloc(sizeof(path_match));
+  pm->path = path;
+  pm->link_to = link_to;
+  return pm;
+}
+
+path_match* find_in_path(char*);
+
+path_match* find_in_path(char* command) {
+  const char* path = getenv("PATH");
   if (path == NULL) {
     error(1, errno, "could not get PATH environment variable");
   } 
-  strtok(path, ":");
+  // strtok modifies strings, so copy first
+  char* path2 = strdup(path);
+  strtok(path2, ":");
+  path_match* match=NULL;
   while(1) {
     char* entry = strtok(NULL, ":");
     if (entry == NULL) {
@@ -54,19 +67,25 @@ char* find_in_path(char* command) {
     struct stat sb;
     if (lstat(fname, &sb) == 0) {
       if (S_ISLNK(sb.st_mode)) {
+        //link
         char buf[8192];
-        if (readlink(fname, buf, 8192) == -1) {
+        ssize_t read=-1;
+        if ((read = readlink(fname, buf, 8192)) == -1) {
           error(1, errno, "could not read link '%s'", fname);
         }
-        return fname;
+        buf[read]='\0';
+        match = mk_path_match(fname, strdup(buf));
+        break;
       }
-      if (sb.st_mode & S_IXUSR) {
-        //match
-        return fname;
+      else if (S_ISREG(sb.st_mode) && (sb.st_mode & S_IXUSR)) {
+        //executable
+        match = mk_path_match(fname, NULL);
+        break;
       }
     }
     free(fname);
   }
+  free(path2);
   return match;
 }
 
@@ -171,7 +190,7 @@ type_match* find_type(char* command) {
 
 typedef struct match {
   type_match *type_match;
-  char* path_match;
+  path_match* path_match;
 } match;
 
 void free_match(match* m);
@@ -180,7 +199,7 @@ void free_match(match* m) {
     return;
   }
   free_type_match(m->type_match);
-  free2(m->path_match);
+  free_path_match(m->path_match);
   free(m);
 }
 
@@ -271,6 +290,7 @@ void find_recursive(char* command) {
     }
     char* next_name = NULL;
     if (m->type_match != NULL) {
+      current->match_type=FIND_TYPE;
       type_match * tm = m->type_match;
       if (tm->alias_match != NULL) {
         alias_match* am = tm->alias_match;
@@ -279,12 +299,17 @@ void find_recursive(char* command) {
       } else if(tm->builtin_match) {
         printf("'%s' is a shell builtin\n", current->name);
       }
-      current->match_type=FIND_TYPE;
     }
     else if (m->path_match != NULL) {
-      printf("'%s' is executable %s\n", current->name, m->path_match);
-      next_name = NULL;
       current->match_type=FIND_PATH;
+      path_match* pm = m->path_match;
+      if (pm->link_to == NULL) {
+        printf("'%s' is executable '%s'\n", current->name, pm->path);
+        next_name = NULL;
+      } else {
+        printf("'%s' is symlink '%s' to '%s'\n", current->name, pm->path, pm->link_to);
+        next_name = pm->link_to;
+      }
     }
     if (next_name == NULL) {
       printf("done\n");
