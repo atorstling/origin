@@ -7,6 +7,7 @@
 #include <error.h>
 #include <regex.h>
 #include <assert.h>
+#include <unistd.h>
 
 void *alloc(size_t size);
 void *alloc(size_t size) {
@@ -24,6 +25,10 @@ void free2(void *d) {
   }
 }
 
+typedef struct path_match {
+  char* path;
+  char* link_to;
+} path_match;
 
 char* find_in_path(char*);
 
@@ -31,7 +36,7 @@ char* find_in_path(char* command) {
   char* path = getenv("PATH");
   char *match = NULL;
   if (path == NULL) {
-    error(1, errno, "could not get path");
+    error(1, errno, "could not get PATH environment variable");
   } 
   strtok(path, ":");
   while(1) {
@@ -47,9 +52,18 @@ char* find_in_path(char* command) {
     strcat(fname, "/");
     strcat(fname, command);
     struct stat sb;
-    if (stat(fname, &sb) == 0 && sb.st_mode & S_IXUSR) {
-      //match
-      return fname;
+    if (lstat(fname, &sb) == 0) {
+      if (S_ISLNK(sb.st_mode)) {
+        char buf[8192];
+        if (readlink(fname, buf, 8192) == -1) {
+          error(1, errno, "could not read link '%s'", fname);
+        }
+        return fname;
+      }
+      if (sb.st_mode & S_IXUSR) {
+        //match
+        return fname;
+      }
     }
     free(fname);
   }
