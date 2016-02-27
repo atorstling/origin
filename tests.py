@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 import subprocess;
 
-def check(cmd, *expected):
+def check(cmd, expected):
   out = run(cmd)
   for e in expected:
     if not e in out: 
-      raise Exception("expected '%s' in '%s'" % (expected, out))
+      raise Exception("expected '%s' in '%s'" % (e, out))
   return out
 
 def run(cmd):
@@ -13,16 +13,16 @@ def run(cmd):
 
 
 # non-existent
-print check("miss", "no match");
+print check("miss", ["no match"]);
 # multi-level alias
-print check("ll", "'ls' is executable '/bin/ls'");
+print check("ll", ["'ls' found in path as executable '/bin/ls'"]);
 # executable without indirection
-print check("uname", "executable '/bin/uname'");
+print check("uname", ["executable '/bin/uname'"]);
 # built-in 
-print check("type", "'type' is a shell builtin");
+print check("type", ["'type' is a shell builtin"]);
 # symlink
 print check("sh", 
-            "'sh' is symlink '/bin/sh' to 'dash'",
-            "'dash' is executable '/bin/dash'");
+            ["'sh' found in path as symlink '/bin/sh' to '/bin/dash'",
+            "'/bin/dash' is executable '/bin/dash'"]);
 
 print "OK"

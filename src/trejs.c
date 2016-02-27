@@ -19,6 +19,18 @@ void *alloc(size_t size) {
   return m;
 }
 
+char* strdup2(const char* str);
+char* strdup2(const char* str) {
+  if (str == NULL) {
+    return NULL;
+  }
+  char* duped = strdup(str);
+  if (duped == NULL) {
+    error(1, errno, "Unable to duplicate string '%s'", str);
+  } 
+  return duped;
+}
+
 typedef struct path_match {
   char* path;
   char* link_to;
@@ -42,6 +54,27 @@ path_match* mk_path_match(char* path, char* link_to) {
   return pm;
 }
 
+path_match* find_file(char* path);
+path_match* find_file(char* path) {
+  struct stat sb;
+  if (lstat(path, &sb) == 0) {
+    if (S_ISLNK(sb.st_mode)) {
+      //link
+      char actualpath [PATH_MAX+1];
+      if (!realpath(path, actualpath)) {
+        error(1, errno, "could not read link '%s'", path);
+      }
+      return mk_path_match(strdup2(path), strdup2(actualpath));
+    }
+    else if (S_ISREG(sb.st_mode) && (sb.st_mode & S_IXUSR)) {
+      //executable
+      return mk_path_match(strdup2(path), NULL);
+    }
+  }
+  return NULL;
+}
+
+
 path_match* find_in_path(char*);
 
 path_match* find_in_path(char* command) {
@@ -50,7 +83,7 @@ path_match* find_in_path(char* command) {
     error(1, errno, "could not get PATH environment variable");
   } 
   // strtok modifies strings, so copy first
-  char* path2 = strdup(path);
+  char* path2 = strdup2(path);
   strtok(path2, ":");
   path_match* match=NULL;
   while(1) {
@@ -61,28 +94,15 @@ path_match* find_in_path(char* command) {
     }
     size_t command_len = strlen(command);
     size_t entry_len = strlen(entry);
-    char *fname = alloc(entry_len+command_len+2);
-    strcpy(fname, entry);
-    strcat(fname, "/");
-    strcat(fname, command);
-    struct stat sb;
-    if (lstat(fname, &sb) == 0) {
-      if (S_ISLNK(sb.st_mode)) {
-        //link
-        char actualpath [PATH_MAX+1];
-        if (!realpath(fname, actualpath)) {
-          error(1, errno, "could not read link '%s'", fname);
-        }
-        match = mk_path_match(fname, strdup(actualpath));
-        break;
-      }
-      else if (S_ISREG(sb.st_mode) && (sb.st_mode & S_IXUSR)) {
-        //executable
-        match = mk_path_match(fname, NULL);
-        break;
-      }
+    char *fpath = alloc(entry_len+command_len+2);
+    strcpy(fpath, entry);
+    strcat(fpath, "/");
+    strcat(fpath, command);
+    match = find_file(fpath);
+    free(fpath);
+    if (match != NULL) {
+      break;
     }
-    free(fname);
   }
   free(path2);
   return match;
@@ -188,6 +208,7 @@ type_match* find_type(char* command) {
 }
 
 typedef struct match {
+  path_match* file_match;
   type_match *type_match;
   path_match* path_match;
 } match;
@@ -197,19 +218,27 @@ void free_match(match* m) {
   if (m == NULL) {
     return;
   }
+  free_path_match(m->file_match);
   free_type_match(m->type_match);
   free_path_match(m->path_match);
   free(m);
 }
 
-static unsigned int FIND_TYPE=1<<0;
-static unsigned int FIND_PATH=1<<1;
+static unsigned int FIND_FILE=1<<0;
+static unsigned int FIND_TYPE=1<<1;
+static unsigned int FIND_PATH=1<<2;
 
 match *find(char* command, unsigned int bans);
 match *find(char* command, unsigned int bans) {
   match* m = alloc(sizeof(match));
   m->type_match=NULL;
   m->path_match=NULL;
+  if ((bans & FIND_FILE) == 0) {
+    m->file_match = find_file(command);
+    if (m->file_match != NULL) {
+      return m;
+    }
+  }
   if ((bans & FIND_TYPE) == 0) {
     m->type_match = find_type(command);
     if (m->type_match != NULL) {
@@ -247,10 +276,11 @@ unsigned int found_as(cmd* first, char* name) {
   return matches;
 }
 
+
 cmd* mk_cmd(char* name, cmd* next);
 cmd* mk_cmd(char* name, cmd* next) {
   cmd* c = alloc(sizeof(cmd));
-  c->name = strdup(name);
+  c->name = strdup2(name);
   c->next = next;
   c->done = 0;
   return c;
@@ -300,8 +330,20 @@ void find_recursive(char* command) {
       }
     }
     else if (m->path_match != NULL) {
+      //Command found in path
       current->match_type=FIND_PATH;
       path_match* pm = m->path_match;
+      if (pm->link_to == NULL) {
+        printf("'%s' found in path as executable '%s'\n", current->name, pm->path);
+        next_name = NULL;
+      } else {
+        printf("'%s' found in path as symlink '%s' to '%s'\n", current->name, pm->path, pm->link_to);
+        next_name = pm->link_to;
+      }
+    } else if(m->file_match != NULL) {
+      //Command was file
+      current->match_type=FIND_FILE;
+      path_match* pm = m->file_match;
       if (pm->link_to == NULL) {
         printf("'%s' is executable '%s'\n", current->name, pm->path);
         next_name = NULL;
@@ -314,9 +356,11 @@ void find_recursive(char* command) {
       printf("done\n");
     }
     current->done=1;
+    //alloc
     cmd* next = maybe_mk_cmd(next_name, NULL);
     current->next = next;
     current = next; 
+    //first free
     free_match(m);
   }
   free_cmds(first);
