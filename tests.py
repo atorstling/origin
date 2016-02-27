@@ -24,7 +24,7 @@ print check("ll", 0, ["'ll' is an alias for 'ls' in shell '/bin/bash': 'ls -alF'
                       "'/bin/ls' is an executable",
                       "target reached"]);
 # built-in 
-print check("type", 0, ["'type' is a shell builtin"]);
+print check("type", 0, ["'type' is built into shell '/bin/bash'"]);
 # file
 print check("/bin/uname", 0, ["'/bin/uname' is an executable"]);
 # executable in path 

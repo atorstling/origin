@@ -184,10 +184,13 @@ typedef struct alias_match{
   char* alias_for;
 } alias_match;
 
+typedef struct builtin_match{
+  char* shell;
+} builtin_match;
+
 typedef struct type_match{
   alias_match* alias_match;
-  unsigned int builtin_match;
-  char pad[4];
+  builtin_match* builtin_match;
 } type_match;
 
 
@@ -202,6 +205,11 @@ void free_type_match(type_match *m) {
     free(ma->declaration);
     free(ma->alias_for);
     free(ma);
+  }
+  if (m->builtin_match != NULL) {
+    builtin_match* bm = m->builtin_match;
+    free(bm->shell);
+    free(bm);
   }
   free(m);
 }
@@ -233,7 +241,9 @@ type_match* find_type(char* command) {
   while ((read = getline(&line, &rowlen, fp)) != -1) {
       if(strstr(line, "is a shell builtin")) {
         m = alloc(sizeof(type_match));
-        m->builtin_match=1;
+        builtin_match* bm = alloc(sizeof(builtin_match));
+        bm->shell=strdup2(shell);
+        m->builtin_match=bm;
         m->alias_match=NULL;
         break;
       }
@@ -241,8 +251,7 @@ type_match* find_type(char* command) {
       if (alias_for != NULL) {
         char* declaration=get_group(&alias_r, line, 1);
         alias_match *am = alloc(sizeof(alias_match));
-        am->shell= alloc(strlen(shell)+1);
-        strcpy(am->shell, shell);
+        am->shell=strdup2(shell);
         am->declaration=declaration;
         am->alias_for=alias_for;
         m = alloc(sizeof(type_match));
@@ -380,7 +389,7 @@ int find_recursive(char* command) {
         printf("'%s' is an alias for '%s' in shell '%s': '%s'\n", current->name, am->alias_for, am->shell,  am->declaration);
         next_name = am->alias_for;
       } else if(tm->builtin_match) {
-        printf("'%s' is a shell builtin\n", current->name);
+        printf("'%s' is built into shell '%s'\n", current->name, tm->builtin_match->shell);
       }
     }
     else if (m->path_match != NULL) {
