@@ -103,27 +103,27 @@ path_match* mk_path_match(file_match* fm, char* path_segment) {
 
 char* canonicalize(char* path, struct stat *sb);
 char* canonicalize(char* path, struct stat *sb) {
-    size_t size = (unsigned long) sb->st_size;
-    char* linkname = alloc(size + 1); 
-    long r = readlink(path, linkname, size);
-    if (r == -1) {
-      error(EXIT_OTHER_ERROR, errno, "could not read link '%s'", path);
-    }
-    linkname[r] = '\0';
-    //linkname can be absolute or relative, see "path_resolution(7)"
-    assert(r > 0);
-    if (linkname[0]=='/') {
-      return linkname;
-    } else {
-      char* path2 = strdup(path);
-      char* dir = dirname(path2);
-      char* template = "%s/%s";
-      char* abs = malloc(strlen(dir) + strlen(linkname) + strlen(template));
-      sprintf(abs, template, dir, linkname);
-      free(linkname); 
-      free(path2);
-      return abs;
-    }
+  size_t size = (unsigned long) sb->st_size;
+  char* linkname = alloc(size + 1); 
+  long r = readlink(path, linkname, size);
+  if (r == -1) {
+    error(EXIT_OTHER_ERROR, errno, "could not read link '%s'", path);
+  }
+  linkname[r] = '\0';
+  //linkname can be absolute or relative, see "path_resolution(7)"
+  assert(r > 0);
+  if (linkname[0]=='/') {
+    return linkname;
+  } else {
+    char* path2 = strdup(path);
+    char* dir = dirname(path2);
+    char* template = "%s/%s";
+    char* abs = malloc(strlen(dir) + strlen(linkname) + strlen(template));
+    sprintf(abs, template, dir, linkname);
+    free(linkname); 
+    free(path2);
+    return abs;
+  }
 }
 
 file_match* find_file(char* path);
@@ -179,21 +179,21 @@ path_match* find_in_path(char* command) {
 
 char* get_group(const regex_t *r, const char* line, unsigned int group);
 char* get_group(const regex_t *r, const char* line, unsigned int group) {
-    unsigned int ngroups = group+1;
-    regmatch_t *m=alloc(ngroups*sizeof(regmatch_t)); 
-    char* match=NULL;
-    if (regexec(r, line, ngroups, m, 0) == 0) {
-      for(unsigned int i=0; i<ngroups; i++) {
-        assert(m[i].rm_so != -1);
-      }
-      unsigned int len = (unsigned int) (m[group].rm_eo - m[group].rm_so);
-      char* alias = alloc(len+1);
-      memcpy(alias, line + m[group].rm_so, len);
-      alias[len] = '\0';
-      match = alias;
+  unsigned int ngroups = group+1;
+  regmatch_t *m=alloc(ngroups*sizeof(regmatch_t)); 
+  char* match=NULL;
+  if (regexec(r, line, ngroups, m, 0) == 0) {
+    for(unsigned int i=0; i<ngroups; i++) {
+      assert(m[i].rm_so != -1);
     }
-    free(m);
-    return match;
+    unsigned int len = (unsigned int) (m[group].rm_eo - m[group].rm_so);
+    char* alias = alloc(len+1);
+    memcpy(alias, line + m[group].rm_so, len);
+    alias[len] = '\0';
+    match = alias;
+  }
+  free(m);
+  return match;
 }
 
 typedef struct alias_match{
@@ -256,27 +256,27 @@ type_match* find_type(char* command) {
   ssize_t read;
   type_match *m = NULL;
   while ((read = getline(&line, &rowlen, fp)) != -1) {
-      if(strstr(line, "is a shell builtin")) {
-        m = alloc(sizeof(type_match));
-        builtin_match* bm = alloc(sizeof(builtin_match));
-        bm->shell=strdup2(shell);
-        m->builtin_match=bm;
-        m->alias_match=NULL;
-        break;
-      }
-      char* alias_for=get_group(&alias_r, line, 2);
-      if (alias_for != NULL) {
-        char* declaration=get_group(&alias_r, line, 1);
-        alias_match *am = alloc(sizeof(alias_match));
-        am->shell=strdup2(shell);
-        am->declaration=declaration;
-        am->alias_for=alias_for;
-        m = alloc(sizeof(type_match));
-        m->alias_match = am;
-        m->builtin_match = 0;
-        break;
-      }
-      free(alias_for);
+    if(strstr(line, "is a shell builtin")) {
+      m = alloc(sizeof(type_match));
+      builtin_match* bm = alloc(sizeof(builtin_match));
+      bm->shell=strdup2(shell);
+      m->builtin_match=bm;
+      m->alias_match=NULL;
+      break;
+    }
+    char* alias_for=get_group(&alias_r, line, 2);
+    if (alias_for != NULL) {
+      char* declaration=get_group(&alias_r, line, 1);
+      alias_match *am = alloc(sizeof(alias_match));
+      am->shell=strdup2(shell);
+      am->declaration=declaration;
+      am->alias_for=alias_for;
+      m = alloc(sizeof(type_match));
+      m->alias_match = am;
+      m->builtin_match = 0;
+      break;
+    }
+    free(alias_for);
   }
   free(line);
   regfree(&alias_r);
@@ -301,6 +301,15 @@ typedef struct match {
   path_match* path_match;
 } match;
 
+match* mk_match(void);
+match* mk_match() {
+  match* m = alloc(sizeof(match));
+  m->file_match=NULL;
+  m->type_match=NULL;
+  m->path_match=NULL;
+  return m;
+}
+
 void free_match(match* m);
 void free_match(match* m) {
   if (m == NULL) {
@@ -318,9 +327,7 @@ static unsigned int FIND_PATH=1<<2;
 
 match *find(char* command, unsigned int bans);
 match *find(char* command, unsigned int bans) {
-  match* m = alloc(sizeof(match));
-  m->type_match=NULL;
-  m->path_match=NULL;
+  match* m = mk_match();
   if ((bans & FIND_FILE) == 0) {
     m->file_match = find_file(command);
     if (m->file_match != NULL) {

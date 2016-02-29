@@ -3,6 +3,7 @@ CC=clang
  -Wcast-qual -Wstrict-prototypes -Wmissing-prototypes -I.
 # -Wno-padded 
 CFLAGS=-std=c11 -O0 -g -D_POSIX_C_SOURCE=200809L -D_XOPEN_SOURCE=700 -Weverything -Werror -Wno-format-nonliteral
+#CFLAGS+=--analyze -Xanalyzer -analyzer-output=text
 OUT=target/trejs
 ODIR=target
 SDIR=src
@@ -16,7 +17,7 @@ $(OUT): $(OBJS)
 	$(CC) -o $@ $^ $(CFLAGS)
 
 clean:
-	rm -f $(ODIR)/*
+	rm -rf $(ODIR)/*
 
 make:
 	scan-build make
