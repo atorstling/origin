@@ -4,10 +4,10 @@ CC=clang
 # -Wno-padded 
 CFLAGS=-std=c11 -O0 -g -D_POSIX_C_SOURCE=200809L -D_XOPEN_SOURCE=700 -Weverything -Werror -Wno-format-nonliteral
 #CFLAGS+=--analyze -Xanalyzer -analyzer-output=text
-OUT=target/trejs
+OUT=target/track
 ODIR=target
 SDIR=src
-_OBJS=trejs.o
+_OBJS=track.o
 OBJS=$(patsubst %,$(ODIR)/%,$(_OBJS))
 
 $(OUT): $(OBJS)
