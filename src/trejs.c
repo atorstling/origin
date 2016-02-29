@@ -5,14 +5,32 @@
 #include <string.h>
 #include <err.h>
 #include <errno.h>
-#include <error.h>
 #include <regex.h>
 #include <assert.h>
 #include <unistd.h>
 #include <libgen.h>
+#include <stdarg.h>
 
 static int EXIT_NO_MATCH=1;
 static int EXIT_OTHER_ERROR=2;
+static char* program_name;
+
+void error(int exit_code, int errnum, char* format, ...)__attribute__((noreturn));
+void error(int exit_code, int errnum, char* format, ...) {
+  fflush(stdout);
+  fputs(program_name, stderr);
+  fputs(": ", stderr);
+  va_list args;
+  va_start(args, format);
+  vfprintf(stderr, format, args);
+  va_end(args);
+  if (errnum != 0) {
+    fputs(": ", stderr);
+    fputs(strerror(errnum), stderr);
+  }
+  fputs("\n", stderr);
+  exit(exit_code);
+}
 
 void *alloc(size_t size);
 void *alloc(size_t size) {
@@ -222,13 +240,12 @@ type_match* find_type(char* command) {
     error(EXIT_OTHER_ERROR, errno, "failed to read 'SHELL' environment variable");
   }
   const char* template = "%s -ic 'type %s' 2>&1";
-  char* alias_command = alloc(strlen(shell) + strlen(command) + strlen(template));
-  sprintf(alias_command, template, shell, command);
-  FILE *fp = popen(alias_command, "r");
+  char* type_command = alloc(strlen(shell) + strlen(command) + strlen(template));
+  sprintf(type_command, template, shell, command);
+  FILE *fp = popen(type_command, "r");
   if (fp == NULL) {
-    error(EXIT_OTHER_ERROR, errno, "failed to run alias command '%s'", alias_command);
+    error(EXIT_OTHER_ERROR, errno, "failed to run shell command '%s'", type_command);
   }
-  free(alias_command);
   const char* alias_pattern = ".*is aliased to `(([^' ]*) [^']*)'";
   regex_t alias_r;
   if (regcomp(&alias_r, alias_pattern, REG_EXTENDED) != 0) {
@@ -263,7 +280,18 @@ type_match* find_type(char* command) {
   }
   free(line);
   regfree(&alias_r);
-  pclose(fp);
+  int child_status = pclose(fp);
+  if (child_status == -1) {
+    error(EXIT_OTHER_ERROR, errno, "could not wait for command '%s' to finish", type_command);
+  }
+  if (!WIFEXITED(child_status)) {
+    error(EXIT_OTHER_ERROR, 0, "child process '%s' did no exit cleanly", type_command);
+  }
+  int exit_code = WEXITSTATUS(child_status);
+  if (exit_code != 0 && exit_code != 1) {
+    error(EXIT_OTHER_ERROR, 0, "failed to run shell command '%s', got exit code '%d'", type_command, exit_code);
+  }
+  free(type_command);
   return m;
 }
 
@@ -485,6 +513,7 @@ cmd* find_recursive(char* command) {
 
 int main(int argc, char** argv)
 {
+  program_name = argv[0];
   if (argc < 2) {
     error(EXIT_OTHER_ERROR, errno, "missing command name");
   }
