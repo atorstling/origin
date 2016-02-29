@@ -1,2 +1,2 @@
 #!/bin/bash
-valgrind -q --error-exitcode=123 --leak-check=yes target/trejs $*
+valgrind -q --error-exitcode=123 --leak-check=yes target/track $*
