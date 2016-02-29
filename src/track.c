@@ -59,6 +59,14 @@ typedef struct file_match {
   char* link_to;
 } file_match;
 
+file_match* mk_file_match(char* path, char* link_to);
+file_match* mk_file_match(char* path, char* link_to) {
+  file_match* fm = alloc(sizeof(file_match));
+  fm->path = path;
+  fm->link_to = link_to;
+  return fm;
+}
+
 void free_file_match(file_match* fm);
 void free_file_match(file_match* fm) {
   if(fm == NULL) {
@@ -74,6 +82,14 @@ typedef struct path_match {
   char* path_segment;
 } path_match;
 
+path_match* mk_path_match(file_match* fm, char* path_segment);
+path_match* mk_path_match(file_match* fm, char* path_segment) {
+  path_match* pm = alloc(sizeof(path_match));
+  pm->fm = fm; 
+  pm->path_segment = strdup2(path_segment);
+  return pm;
+}
+
 void free_path_match(path_match* pm);
 void free_path_match(path_match* pm) {
   if (pm == NULL) {
@@ -83,23 +99,6 @@ void free_path_match(path_match* pm) {
   free(pm->path_segment);
   free(pm);
 }
-
-file_match* mk_file_match(char* path, char* link_to);
-file_match* mk_file_match(char* path, char* link_to) {
-  file_match* fm = alloc(sizeof(file_match));
-  fm->path = path;
-  fm->link_to = link_to;
-  return fm;
-}
-
-path_match* mk_path_match(file_match* fm, char* path_segment);
-path_match* mk_path_match(file_match* fm, char* path_segment) {
-  path_match* pm = alloc(sizeof(path_match));
-  pm->fm = fm; 
-  pm->path_segment = strdup2(path_segment);
-  return pm;
-}
-
 
 char* canonicalize(char* path, struct stat *sb);
 char* canonicalize(char* path, struct stat *sb) {
@@ -118,7 +117,7 @@ char* canonicalize(char* path, struct stat *sb) {
     char* path2 = strdup(path);
     char* dir = dirname(path2);
     char* template = "%s/%s";
-    char* abs = malloc(strlen(dir) + strlen(linkname) + strlen(template));
+    char* abs = alloc(strlen(dir) + strlen(linkname) + strlen(template));
     sprintf(abs, template, dir, linkname);
     free(linkname); 
     free(path2);
@@ -363,20 +362,6 @@ typedef struct cmd {
   char pad[4];
 } cmd;
 
-unsigned int found_as(cmd* first, char* name);
-unsigned int found_as(cmd* first, char* name) {
-  cmd* current = first;
-  unsigned int matches = 0;
-  while(current != NULL) {
-    if(strcmp(name, current->name)==0 && current->done) {
-      matches |= current->match_type;
-    }
-    current=current->next;
-  }
-  return matches;
-}
-
-
 cmd* mk_cmd(char* name, cmd* next);
 cmd* mk_cmd(char* name, cmd* next) {
   cmd* c = alloc(sizeof(cmd));
@@ -407,6 +392,19 @@ void free_cmds(cmd* first) {
     free(current);
     current = next;
   } 
+}
+
+unsigned int found_as(cmd* first, char* name);
+unsigned int found_as(cmd* first, char* name) {
+  cmd* current = first;
+  unsigned int matches = 0;
+  while(current != NULL) {
+    if(strcmp(name, current->name)==0 && current->done) {
+      matches |= current->match_type;
+    }
+    current=current->next;
+  }
+  return matches;
 }
 
 int print_cmds(cmd* first);
