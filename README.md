@@ -1,5 +1,5 @@
 # Track
-Track a command - `which` on steroids
+Track down the origin of a command - `which` on steroids
 
 # Examples
 ```bash
