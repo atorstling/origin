@@ -10,17 +10,19 @@ SDIR=src
 _OBJS=trejs.o
 OBJS=$(patsubst %,$(ODIR)/%,$(_OBJS))
 
+$(OUT): $(OBJS)
+	$(CC) -o $@ $^ $(CFLAGS)
+
 $(ODIR)/%.o: $(SDIR)/%.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-$(OUT): $(OBJS)
-	$(CC) -o $@ $^ $(CFLAGS)
+compile: $(OUT)
 
 clean:
 	rm -rf $(ODIR)/*
 
-make:
-	scan-build make
+analyze: 
+	scan-build --use-cc=clang make clean compile
 
 test: $(OUT)
 	./tests.py
