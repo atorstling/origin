@@ -25,5 +25,5 @@ clean:
 analyze: 
 	scan-build --use-cc=clang make clean compile
 
-test: $(OUT)
+check: $(OUT)
 	./tests.py

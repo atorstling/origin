@@ -231,6 +231,25 @@ void free_type_match(type_match *m) {
   free(m);
 }
 
+typedef struct resolve_match {
+  char* full_name;
+} resolve_match;
+
+resolve_match* mk_resolve_match(char* full_name);
+resolve_match* mk_resolve_match(char* full_name) {
+  resolve_match* m = malloc(sizeof(resolve_match));
+  m->full_name = full_name;
+  return m;
+}
+
+void free_resolve_match(resolve_match* m);
+void free_resolve_match(resolve_match* m) {
+  if(m == NULL) {
+    return;
+  }
+  free(m->full_name);
+  free(m);
+}
 
 type_match* find_type(char*);
 type_match* find_type(char* command) {
@@ -298,6 +317,7 @@ typedef struct match {
   file_match* file_match;
   type_match *type_match;
   path_match* path_match;
+  resolve_match* resolve_match;
 } match;
 
 match* mk_match(void);
@@ -306,6 +326,7 @@ match* mk_match() {
   m->file_match=NULL;
   m->type_match=NULL;
   m->path_match=NULL;
+  m->resolve_match=NULL;
   return m;
 }
 
@@ -317,12 +338,29 @@ void free_match(match* m) {
   free_file_match(m->file_match);
   free_type_match(m->type_match);
   free_path_match(m->path_match);
+  free_resolve_match(m->resolve_match);
   free(m);
+}
+
+
+resolve_match* resolve(char* command);
+resolve_match* resolve(char* command) {
+  if (command==NULL) {
+    error(EXIT_OTHER_ERROR, 0, "NULL command");
+  }
+  char *resolved_path = realpath(command, NULL); 
+  if(strcmp(command, resolved_path) == 0) {
+    //Resolving didn't change anything
+    free(resolved_path);
+    return NULL;
+  }
+  return mk_resolve_match(resolved_path);
 }
 
 static unsigned int FIND_FILE=1<<0;
 static unsigned int FIND_TYPE=1<<1;
 static unsigned int FIND_PATH=1<<2;
+static unsigned int FIND_RESOLVE=1<<3;
 
 match *find(char* command, unsigned int bans);
 match *find(char* command, unsigned int bans) {
@@ -342,6 +380,13 @@ match *find(char* command, unsigned int bans) {
   if ((bans & FIND_PATH) == 0) {
     m->path_match = find_in_path(command);
     if (m->path_match != NULL) {
+      return m;
+    }
+  }
+  if ((bans & FIND_RESOLVE) == 0) {
+    printf("resolving '%s'\n", command);
+    m->resolve_match = resolve(command);
+    if (m->resolve_match != NULL) {
       return m;
     }
   }
@@ -421,6 +466,7 @@ int print_cmds(cmd* first) {
     type_match *tm = m->type_match;
     path_match* pm = m->path_match;
     file_match* fm = m->file_match;
+    resolve_match* rm = m->resolve_match;
     if (tm != NULL) {
       alias_match* am = tm->alias_match;
       builtin_match* bm = tm->builtin_match;
@@ -442,6 +488,8 @@ int print_cmds(cmd* first) {
       } else {
         printf("'%s' is a symlink to '%s'\n", current->name, fm->link_to);
       }
+    } else if(rm !=NULL) {
+      printf("'%s' has canonical pathname '%s'", current->name, rm->full_name);
     }
     if (current->target_reached) {
       printf("target reached\n");
@@ -469,6 +517,7 @@ cmd* find_recursive(char* command) {
     type_match* tm = m->type_match;
     path_match* pm = m->path_match;
     file_match* fm = m->file_match;
+    resolve_match* rm = m->resolve_match;
     if (tm != NULL) {
       //Command found through 'type' command in shell
       current->match_type=FIND_TYPE;
@@ -481,8 +530,7 @@ cmd* find_recursive(char* command) {
         //Builtin, end
         next_name = NULL;
       }
-    }
-    else if (pm != NULL) {
+    } else if (pm != NULL) {
       //Command found in path
       current->match_type=FIND_PATH;
       if (pm->fm->link_to != NULL) {
@@ -503,6 +551,9 @@ cmd* find_recursive(char* command) {
         //Executable, end
         next_name = NULL;
       }
+    } else if(rm != NULL) {
+      current->match_type=FIND_RESOLVE;
+      next_name = rm->full_name;
     }
     if (next_name == NULL) {
       current->target_reached=1;
