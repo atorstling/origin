@@ -456,65 +456,19 @@ unsigned int found_as(cmd* first, char* name) {
   return matches;
 }
 
-int print_cmds(cmd* first);
-int print_cmds(cmd* first) {
-  cmd *current = first;
-  int exit_status=EXIT_SUCCESS;
-  while(current != NULL) {
-    match* m = current->match;
-    if (m==NULL) {
-      printf("no match\n");
-      exit_status=EXIT_NO_MATCH;
-      break;
-    }
-    type_match *tm = m->type_match;
-    path_match* pm = m->path_match;
-    file_match* fm = m->file_match;
-    resolve_match* rm = m->resolve_match;
-    if (tm != NULL) {
-      alias_match* am = tm->alias_match;
-      builtin_match* bm = tm->builtin_match;
-      if (am != NULL) {
-        printf("'%s' is an alias for '%s' in shell '%s': '%s'\n", current->name, am->alias_for, am->shell,  am->declaration);
-      } else if(bm != NULL) {
-        printf("'%s' is built into shell '%s'\n", current->name, bm->shell);
-      }
-    } else if (pm != NULL) {
-      printf("'%s' found in PATH as '%s'\n", current->name, pm->fm->path);
-      if (pm->fm->link_to == NULL) {
-        printf("'%s' is an executable\n", pm->fm->path);
-      } else {
-        printf("'%s' is a symlink to '%s'\n", pm->fm->path, pm->fm->link_to);
-      }
-    } else if(fm != NULL) {
-      if (fm->link_to == NULL) {
-        printf("'%s' is an executable\n", current->name);
-      } else {
-        printf("'%s' is a symlink to '%s'\n", current->name, fm->link_to);
-      }
-    } else if(rm !=NULL) {
-      printf("'%s' has canonical pathname '%s'", current->name, rm->full_name);
-    }
-    if (current->target_reached) {
-      printf("target reached\n");
-      exit_status=EXIT_SUCCESS ;
-      assert(current->next == NULL);
-    }
-    current = current->next;
-  }
-  return exit_status;
-}
-
-cmd* find_recursive(char* command);
-cmd* find_recursive(char* command) {
+int find_loop(char* command);
+int find_loop(char* command) {
   cmd *first = mk_cmd(command, NULL);
   cmd* current = first;
+  int exit_status=EXIT_SUCCESS;
   while(current != NULL) {
     unsigned int bans = found_as(first, current->name);
     current->match = find(current->name, bans);
     match* m = current->match;
     if (m==NULL) {
       //no match, abort
+      printf("no match\n");
+      exit_status=EXIT_NO_MATCH;
       break;
     }
     char* next_name = NULL;
@@ -529,19 +483,24 @@ cmd* find_recursive(char* command) {
       builtin_match* bm = tm->builtin_match;
       if (am != NULL) {
         //Alias, follow
+        printf("'%s' is an alias for '%s' in shell '%s': '%s'\n", current->name, am->alias_for, am->shell,  am->declaration);
         next_name = am->alias_for;
       } else if(bm != NULL) {
         //Builtin, end
+        printf("'%s' is built into shell '%s'\n", current->name, bm->shell);
         next_name = NULL;
       }
     } else if (pm != NULL) {
       //Command found in path
+      printf("'%s' found in PATH as '%s'\n", current->name, pm->fm->path);
       current->match_type=FIND_PATH;
       if (pm->fm->link_to != NULL) {
         //Link, follow
+        printf("'%s' is a symlink to '%s'\n", pm->fm->path, pm->fm->link_to);
         next_name = pm->fm->link_to;
       } else {
         //Executable, end
+        printf("'%s' is an executable\n", pm->fm->path);
         next_name = NULL;
       }
     } else if(fm != NULL) {
@@ -550,25 +509,35 @@ cmd* find_recursive(char* command) {
       assert(strcmp(current->name, fm->path) == 0);
       if (fm->link_to != NULL) {
         //Link, follow
+        printf("'%s' is a symlink to '%s'\n", current->name, fm->link_to);
         next_name = fm->link_to;
       } else {
         //Executable, end
+        printf("'%s' is an executable\n", current->name);
         next_name = NULL;
       }
     } else if(rm != NULL) {
       current->match_type=FIND_RESOLVE;
+      printf("'%s' has canonical pathname '%s'", current->name, rm->full_name);
       next_name = rm->full_name;
     }
     if (next_name == NULL) {
       current->target_reached=1;
     }
     current->done=1;
+    if (current->target_reached) {
+      printf("target reached\n");
+      assert(current->next == NULL);
+      exit_status=EXIT_SUCCESS ;
+      break;
+    }
     //Will be null if next_name is null
     cmd* next = maybe_mk_cmd(next_name, NULL);
     current->next = next;
     current = next; 
   }
-  return first;
+  free_cmds(first);
+  return exit_status;
 }
 
 int main(int argc, char** argv)
@@ -578,8 +547,5 @@ int main(int argc, char** argv)
     error(EXIT_OTHER_ERROR, errno, "missing command name");
   }
   char* command = argv[1];
-  cmd* first = find_recursive(command);
-  int exit_status = print_cmds(first); 
-  free_cmds(first);
-  return exit_status;
+  return find_loop(command);
 }
