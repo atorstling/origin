@@ -349,6 +349,10 @@ resolve_match* resolve(char* command) {
     error(EXIT_OTHER_ERROR, 0, "NULL command");
   }
   char *resolved_path = realpath(command, NULL); 
+  if (resolved_path == NULL) {
+    free(resolved_path);
+    return NULL;
+  }
   if(strcmp(command, resolved_path) == 0) {
     //Resolving didn't change anything
     free(resolved_path);
