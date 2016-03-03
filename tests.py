@@ -45,5 +45,10 @@ print check("sant", 0,
            ["'sant' is a symlink to '/bin/../bin/true'",
             "'/bin/../bin/true' is an executable",
             "'/bin/../bin/true' has canonical pathname '/bin/true'"]);
+print check("track", 0,
+            ["'track' is a symlink to './target/track'",
+"'./target/track' is an executable",
+"'./target/track' has canonical pathname '/home/alext/projects/track/target/track'"]
+)
 
 print "OK"

@@ -157,23 +157,17 @@ path_match* find_in_path(char* command) {
   } 
   // strtok modifies strings, so copy first
   char* path2 = strdup2(path);
-  strtok(path2, ":");
   path_match* match=NULL;
-  while(1) {
-    char* entry = strtok(NULL, ":");
-    if (entry == NULL) {
-      //no more path entries
-      break; 
-    }
+  for (char* e=strtok(path2, ":"); e!=NULL; e = strtok(NULL, ":")) {
     size_t command_len = strlen(command);
-    size_t entry_len = strlen(entry);
+    size_t entry_len = strlen(e);
     char *fpath = alloc(entry_len+command_len+2);
-    strcpy(fpath, entry);
+    strcpy(fpath, e);
     strcat(fpath, "/");
     strcat(fpath, command);
     int exists = exists_as_executable(fpath);
     if (exists) {
-      match = mk_path_match(fpath, entry);
+      match = mk_path_match(fpath, e);
       free(fpath);
       break;
     }
