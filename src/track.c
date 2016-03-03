@@ -78,14 +78,14 @@ void free_file_match(file_match* fm) {
 }
 
 typedef struct path_match {
-  file_match *fm;
+  char *path;
   char* path_segment;
 } path_match;
 
-path_match* mk_path_match(file_match* fm, char* path_segment);
-path_match* mk_path_match(file_match* fm, char* path_segment) {
+path_match* mk_path_match(char* path, char* path_segment);
+path_match* mk_path_match(char* path, char* path_segment) {
   path_match* pm = alloc(sizeof(path_match));
-  pm->fm = fm; 
+  pm->path = strdup2(path); 
   pm->path_segment = strdup2(path_segment);
   return pm;
 }
@@ -95,7 +95,7 @@ void free_path_match(path_match* pm) {
   if (pm == NULL) {
     return; 
   }
-  free_file_match(pm->fm);
+  free(pm->path);
   free(pm->path_segment);
   free(pm);
 }
@@ -123,6 +123,12 @@ char* canonicalize(char* path, struct stat *sb) {
     free(path2);
     return abs;
   }
+}
+
+int exists_as_executable(char* path);
+int exists_as_executable(char* path) {
+  struct stat sb;
+  return stat(path, &sb) == 0 && (sb.st_mode & S_IXUSR);
 }
 
 file_match* find_file(char* path);
@@ -165,12 +171,13 @@ path_match* find_in_path(char* command) {
     strcpy(fpath, entry);
     strcat(fpath, "/");
     strcat(fpath, command);
-    file_match* fm = find_file(fpath);
-    free(fpath);
-    if (fm != NULL) {
-      match = mk_path_match(fm, entry);
+    int exists = exists_as_executable(fpath);
+    if (exists) {
+      match = mk_path_match(fpath, entry);
+      free(fpath);
       break;
     }
+    free(fpath);
   }
   free(path2);
   return match;
@@ -390,7 +397,6 @@ match *find(char* command, unsigned int bans) {
     }
   }
   if ((bans & FIND_RESOLVE) == 0) {
-    printf("resolving '%s'\n", command);
     m->resolve_match = resolve(command);
     if (m->resolve_match != NULL) {
       return m;
@@ -494,17 +500,8 @@ int find_loop(char* command) {
       }
     } else if (pm != NULL) {
       //Command found in path
-      printf("'%s' found in PATH as '%s'\n", current->name, pm->fm->path);
-      current->match_type=FIND_PATH;
-      if (pm->fm->link_to != NULL) {
-        //Link, follow
-        printf("'%s' is a symlink to '%s'\n", pm->fm->path, pm->fm->link_to);
-        next_name = pm->fm->link_to;
-      } else {
-        //Executable, end
-        printf("'%s' is an executable\n", pm->fm->path);
-        next_name = pm->fm->path;
-      }
+      printf("'%s' found in PATH as '%s'\n", current->name, pm->path);
+      next_name = pm->path;
     } else if(fm != NULL) {
       //Command was straight up file
       current->match_type=FIND_FILE;

@@ -41,5 +41,9 @@ print check("java", 0,
             "'/etc/alternatives/java' is a symlink to '/usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java",
             "'/usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java' is an executable",
             "target reached"]);
+print check("sant", 0,
+           ["'sant' is a symlink to '/bin/../bin/true'",
+            "'/bin/../bin/true' is an executable",
+            "'/bin/../bin/true' has canonical pathname '/bin/true'"]);
 
 print "OK"
