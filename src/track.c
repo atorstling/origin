@@ -233,12 +233,15 @@ void free_type_match(type_match *m) {
 
 typedef struct resolve_match {
   char* full_name;
+  int unchanged;
+  char pad[4];
 } resolve_match;
 
 resolve_match* mk_resolve_match(char* full_name);
 resolve_match* mk_resolve_match(char* full_name) {
   resolve_match* m = malloc(sizeof(resolve_match));
   m->full_name = full_name;
+  m->unchanged = 0;
   return m;
 }
 
@@ -353,12 +356,11 @@ resolve_match* resolve(char* command) {
     free(resolved_path);
     return NULL;
   }
+  resolve_match* m = mk_resolve_match(resolved_path);
   if(strcmp(command, resolved_path) == 0) {
-    //Resolving didn't change anything
-    free(resolved_path);
-    return NULL;
+    m->unchanged=1; 
   }
-  return mk_resolve_match(resolved_path);
+  return m;
 }
 
 static unsigned int FIND_FILE=1<<0;
@@ -501,7 +503,7 @@ int find_loop(char* command) {
       } else {
         //Executable, end
         printf("'%s' is an executable\n", pm->fm->path);
-        next_name = NULL;
+        next_name = pm->fm->path;
       }
     } else if(fm != NULL) {
       //Command was straight up file
@@ -514,12 +516,14 @@ int find_loop(char* command) {
       } else {
         //Executable, end
         printf("'%s' is an executable\n", current->name);
-        next_name = NULL;
+        next_name = current->name;
       }
     } else if(rm != NULL) {
       current->match_type=FIND_RESOLVE;
-      printf("'%s' has canonical pathname '%s'", current->name, rm->full_name);
-      next_name = rm->full_name;
+      if(!rm->unchanged) { 
+        printf("'%s' has canonical pathname '%s'\n", current->name, rm->full_name);
+      }
+      next_name = NULL;
     }
     if (next_name == NULL) {
       current->target_reached=1;
