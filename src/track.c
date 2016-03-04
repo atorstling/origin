@@ -53,11 +53,10 @@ char* strdup2(const char* str) {
   return duped;
 }
 
-char* make_path(char* dir, char* filename);
-char* make_path(char* dir, char* filename) {
+char* mk_path(char* dir, char* filename);
+char* mk_path(char* dir, char* filename) {
   char* abs;
-  static char* template = "%s/%s";
-  if (asprintf(&abs, template, dir, filename) == -1) {
+  if (asprintf(&abs, "%s/%s", dir, filename) == -1) {
     error(EXIT_OTHER_ERROR, errno, "could not format dirname");
   }
   return abs;
@@ -127,7 +126,7 @@ char* canonicalize(char* path, struct stat *sb) {
   } else {
     char* path2 = strdup(path);
     char* dir = dirname(path2);
-    char* abs = make_path(dir, linkname);
+    char* abs = mk_path(dir, linkname);
     free(linkname); 
     free(path2);
     return abs;
@@ -168,7 +167,7 @@ path_match* find_in_path(char* command) {
   char* path2 = strdup2(path);
   path_match* match=NULL;
   for (char* e=strtok(path2, ":"); e!=NULL; e = strtok(NULL, ":")) {
-    char *fpath = make_path(e, command);
+    char *fpath = mk_path(e, command);
     int exists = exists_as_executable(fpath);
     if (exists) {
       match = mk_path_match(fpath, e);
@@ -265,9 +264,8 @@ type_match* find_type(char* command) {
   if (shell == NULL) {
     error(EXIT_OTHER_ERROR, errno, "failed to read 'SHELL' environment variable");
   }
-  const char* template = "%s -ic 'type %s' 2>&1";
-  char* type_command = alloc(strlen(shell) + strlen(command) + strlen(template));
-  sprintf(type_command, template, shell, command);
+  char* type_command;
+  asprintf(&type_command, "%s -ic 'type %s' 2>&1", shell, command);
   FILE *fp = popen(type_command, "r");
   if (fp == NULL) {
     error(EXIT_OTHER_ERROR, errno, "failed to run shell command '%s'", type_command);
