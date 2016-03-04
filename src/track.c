@@ -168,12 +168,7 @@ path_match* find_in_path(char* command) {
   char* path2 = strdup2(path);
   path_match* match=NULL;
   for (char* e=strtok(path2, ":"); e!=NULL; e = strtok(NULL, ":")) {
-    size_t command_len = strlen(command);
-    size_t entry_len = strlen(e);
-    char *fpath = alloc(entry_len+command_len+2);
-    strcpy(fpath, e);
-    strcat(fpath, "/");
-    strcat(fpath, command);
+    char *fpath = make_path(e, command);
     int exists = exists_as_executable(fpath);
     if (exists) {
       match = mk_path_match(fpath, e);
