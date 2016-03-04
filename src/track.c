@@ -408,9 +408,6 @@ typedef struct cmd {
   unsigned int done;
   unsigned int match_type;
   match* match;
-  //Did we find the cmd we were looking for?
-  unsigned int target_reached;
-  char pad[4];
 } cmd;
 
 cmd* mk_cmd(char* name, cmd* next);
@@ -421,7 +418,6 @@ cmd* mk_cmd(char* name, cmd* next) {
   c->done = 0;
   c->match_type = 0;
   c->match = NULL;
-  c->target_reached = 0;
   return c;
 }
 
@@ -516,11 +512,8 @@ int find_loop(char* command) {
       }
       next_name = NULL;
     }
-    if (next_name == NULL) {
-      current->target_reached=1;
-    }
     current->done=1;
-    if (current->target_reached) {
+    if (next_name == NULL) {
       printf("target reached\n");
       assert(current->next == NULL);
       exit_status=EXIT_SUCCESS ;
