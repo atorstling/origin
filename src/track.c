@@ -53,6 +53,16 @@ char* strdup2(const char* str) {
   return duped;
 }
 
+char* make_path(char* dir, char* filename);
+char* make_path(char* dir, char* filename) {
+  char* abs;
+  static char* template = "%s/%s";
+  if (asprintf(&abs, template, dir, filename) == -1) {
+    error(EXIT_OTHER_ERROR, errno, "could not format dirname");
+  }
+  return abs;
+}
+
 
 typedef struct file_match {
   char* path;
@@ -117,11 +127,7 @@ char* canonicalize(char* path, struct stat *sb) {
   } else {
     char* path2 = strdup(path);
     char* dir = dirname(path2);
-    char* template = "%s/%s";
-    char* abs;
-    if (asprintf(&abs, template, dir, linkname) == -1) {
-      error(EXIT_OTHER_ERROR, errno, "could not format dirname");
-    }
+    char* abs = make_path(dir, linkname);
     free(linkname); 
     free(path2);
     return abs;
