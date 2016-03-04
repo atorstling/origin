@@ -102,9 +102,10 @@ void free_path_match(path_match* pm) {
 
 char* canonicalize(char* path, struct stat *sb);
 char* canonicalize(char* path, struct stat *sb) {
-  size_t size = (unsigned long) sb->st_size;
-  char* linkname = alloc(size + 1); 
-  long r = readlink(path, linkname, size);
+  size_t content_size = (unsigned long) sb->st_size;
+  size_t str_size = content_size + 1;
+  char* linkname = alloc(str_size); 
+  long r = readlink(path, linkname, str_size);
   if (r == -1) {
     error(EXIT_OTHER_ERROR, errno, "could not read link '%s'", path);
   }
@@ -117,8 +118,10 @@ char* canonicalize(char* path, struct stat *sb) {
     char* path2 = strdup(path);
     char* dir = dirname(path2);
     char* template = "%s/%s";
-    char* abs = alloc(strlen(dir) + strlen(linkname) + strlen(template));
-    sprintf(abs, template, dir, linkname);
+    char* abs;
+    if (asprintf(&abs, template, dir, linkname) == -1) {
+      error(EXIT_OTHER_ERROR, errno, "could not format dirname");
+    }
     free(linkname); 
     free(path2);
     return abs;
