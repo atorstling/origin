@@ -528,7 +528,7 @@ int find_loop(char* command) {
     }
     current->done=1;
     if (next_name == NULL) {
-      printf("target reached\n");
+      // target reached
       assert(current->next == NULL);
       exit_status=EXIT_SUCCESS ;
       break;
@@ -546,7 +546,7 @@ int main(int argc, char** argv)
 {
   program_name = argv[0];
   if (argc < 2) {
-    error(EXIT_OTHER_ERROR, errno, "missing command name");
+    error(EXIT_OTHER_ERROR, 0, "missing command name");
   }
   char* command = argv[1];
   return find_loop(command);
