@@ -50,5 +50,7 @@ print check("track", 0,
 "'./target/track' is an executable",
 "'./target/track' has canonical pathname '/home/alext/projects/track/target/track'"]
 )
+print check("/", 0, 
+            ["'/' is a regular file"]);
 
 print "OK"

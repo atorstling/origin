@@ -66,13 +66,16 @@ char* mk_path(char* dir, char* filename) {
 typedef struct file_match {
   char* path;
   char* link_to;
+  int executable; 
+  char pad[4];
 } file_match;
 
-file_match* mk_file_match(char* path, char* link_to);
-file_match* mk_file_match(char* path, char* link_to) {
+file_match* mk_file_match(char* path, int executable, char* link_to);
+file_match* mk_file_match(char* path, int executable, char* link_to) {
   file_match* fm = alloc(sizeof(file_match));
   fm->path = path;
   fm->link_to = link_to;
+  fm->executable = executable;
   return fm;
 }
 
@@ -146,11 +149,13 @@ file_match* find_file(char* path) {
     if (S_ISLNK(sb.st_mode)) {
       //link
       char* actualpath = canonicalize(path, &sb);
-      return mk_file_match(strdup2(path), actualpath);
+      return mk_file_match(strdup2(path), 0, actualpath);
     }
     else if (S_ISREG(sb.st_mode) && (sb.st_mode & S_IXUSR)) {
       //executable
-      return mk_file_match(strdup2(path), NULL);
+      return mk_file_match(strdup2(path), 1, NULL);
+    } else {
+      return mk_file_match(strdup2(path), 0, NULL);
     }
   }
   return NULL;
@@ -159,6 +164,10 @@ file_match* find_file(char* path) {
 
 path_match* find_in_path(char* command);
 path_match* find_in_path(char* command) {
+  if (strchr(command, '/') != NULL) {
+    //don't match "/a/b" + "/" = "/a/b/"
+    return NULL;
+  } 
   const char* path = getenv("PATH");
   if (path == NULL) {
     error(EXIT_OTHER_ERROR, errno, "could not get PATH environment variable");
@@ -502,9 +511,12 @@ int find_loop(char* command) {
         //Link, follow
         printf("'%s' is a symlink to '%s'\n", current->name, fm->link_to);
         next_name = fm->link_to;
-      } else {
-        //Executable, end
+      } else if (fm->executable) {
+        //Executable, continue in case of canonical pathname 
         printf("'%s' is an executable\n", current->name);
+        next_name = current->name;
+      } else {
+        printf("'%s' is a regular file\n", current->name);
         next_name = current->name;
       }
     } else if(rm != NULL) {
