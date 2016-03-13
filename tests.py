@@ -15,7 +15,7 @@ def check(args, expected_code, expected_texts):
   for e in expected_texts:
     if not e in all: 
       raise Exception("expected \n===\n%s\n===\nin command output: \n===\n%s\n===\n" % (e, all))
-  return (out, err) 
+  return (cmd, out, err) 
 
 # no arguments
 print check("", 2, ["origin: missing command name"])
