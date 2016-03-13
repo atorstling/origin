@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import subprocess;
+import os;
 from subprocess import Popen;
+
 
 def check(args, expected_code, expected_texts):
   cmd = "./vrun.sh " + args
@@ -12,7 +14,7 @@ def check(args, expected_code, expected_texts):
     raise Exception("command '%s' exited with status %s, expected %s. Output:\n%s\n" % ( cmd, code, expected_code, all))
   for e in expected_texts:
     if not e in all: 
-      raise Exception("expected '%s' in '%s'" % (e, all))
+      raise Exception("expected \n===\n%s\n===\nin command output: \n===\n%s\n===\n" % (e, all))
   return (out, err) 
 
 # no arguments
@@ -36,11 +38,11 @@ print check("sh", 0,
              "'/bin/sh' is a symlink to '/bin/dash'", 
             "'/bin/dash' is an executable"]);
 # multi-step
-print check("java", 0,  
-            ["'java' found in PATH as '/usr/bin/java'",
-             "'/usr/bin/java' is a symlink to '/etc/alternatives/java'", 
-            "'/etc/alternatives/java' is a symlink to '/usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java",
-            "'/usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java' is an executable" ]);
+print check("write", 0,  
+            ["'write' found in PATH as '/usr/bin/write'",
+             "'/usr/bin/write' is a symlink to '/etc/alternatives/write'", 
+            "'/etc/alternatives/write' is a symlink to '/usr/bin/bsd-write",
+            "'/usr/bin/bsd-write' is an executable" ]);
 print check("sant", 0,
            ["'sant' is a symlink to '/bin/../bin/true'",
             "'/bin/../bin/true' is an executable",
@@ -48,7 +50,7 @@ print check("sant", 0,
 print check("origin", 0,
             ["'origin' is a symlink to './target/origin'",
 "'./target/origin' is an executable",
-"'./target/origin' has canonical pathname '/home/alext/projects/origin/target/origin'"]
+"'./target/origin' has canonical pathname '" + os.getcwd() + "/target/origin'"]
 )
 print check("/", 0, 
             ["'/' is a regular file"]);
