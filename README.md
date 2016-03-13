@@ -39,3 +39,9 @@ Only works with bash (contributions for other shells welcome). Will not read ali
 
 #Building
 Tested on latest Ubuntu and OS X. Just run `make`. Requires `clang` with `c11`, `POSIX.1-2008` and `X/Open 7`
+
+##With Docker
+The easiest way of building is running in docker:
+```
+./docker-build && ./docker-run make check
+```
