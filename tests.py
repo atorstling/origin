@@ -16,7 +16,7 @@ def check(args, expected_code, expected_texts):
   return (out, err) 
 
 # no arguments
-print check("", 2, ["track: missing command name"])
+print check("", 2, ["origin: missing command name"])
 # non-existent
 print check("miss", 1, ["no match"]);
 # multi-level alias
@@ -45,10 +45,10 @@ print check("sant", 0,
            ["'sant' is a symlink to '/bin/../bin/true'",
             "'/bin/../bin/true' is an executable",
             "'/bin/../bin/true' has canonical pathname '/bin/true'"]);
-print check("track", 0,
-            ["'track' is a symlink to './target/track'",
-"'./target/track' is an executable",
-"'./target/track' has canonical pathname '/home/alext/projects/track/target/track'"]
+print check("origin", 0,
+            ["'origin' is a symlink to './target/origin'",
+"'./target/origin' is an executable",
+"'./target/origin' has canonical pathname '/home/alext/projects/origin/target/origin'"]
 )
 print check("/", 0, 
             ["'/' is a regular file"]);

@@ -10,10 +10,10 @@ CC=clang
 CFLAGS+=-std=c11 -D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L -D_XOPEN_SOURCE=700 -Weverything -Werror -Wno-format-nonliteral 
 # /usr/lib/libprofiler.so.0
 LFLAGS=-lprofiler
-OUT=target/track
+OUT=target/origin
 ODIR=target
 SDIR=src
-_OBJS=track.o
+_OBJS=origin.o
 OBJS=$(patsubst %,$(ODIR)/%,$(_OBJS))
 PROFOUT=target/prof.out
 
@@ -38,7 +38,7 @@ check: $(OUT)
 	./tests.py
 
 $(PROFOUT): $(OUT)
-	CPUPROFILE=$(PROFOUT) CPUPROFILE_REALTIME=1 ./target/track ll
+	CPUPROFILE=$(PROFOUT) CPUPROFILE_REALTIME=1 ./target/origin ll
 
 profile: $(PROFOUT)
 
