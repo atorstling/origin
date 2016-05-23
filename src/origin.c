@@ -14,6 +14,7 @@
 static int EXIT_NO_MATCH=1;
 static int EXIT_OTHER_ERROR=2;
 static char* program_name;
+static int verbose_flag_set=0;
 
 void error(int exit_code, int errnum, char* format, ...)__attribute__((noreturn));
 void error(int exit_code, int errnum, char* format, ...) {
@@ -30,6 +31,16 @@ void error(int exit_code, int errnum, char* format, ...) {
   }
   fputs("\n", stderr);
   exit(exit_code);
+}
+
+void verbose(char* format, ...);
+void verbose(char* format, ...) {
+  if (verbose_flag_set) {
+    va_list args;
+    va_start(args, format);
+    vfprintf(stdout, format, args);
+    va_end(args);
+  }
 }
 
 void *alloc(size_t size);
@@ -379,6 +390,7 @@ static unsigned int FIND_FILE=1<<0;
 static unsigned int FIND_TYPE=1<<1;
 static unsigned int FIND_PATH=1<<2;
 static unsigned int FIND_RESOLVE=1<<3;
+static unsigned int FIND_ALL=~0u;
 
 match *find(char* command, unsigned int bans);
 match *find(char* command, unsigned int bans) {
@@ -470,9 +482,14 @@ int find_loop(char* command) {
   cmd *first = mk_cmd(command, NULL);
   cmd* current = first;
   int exit_status=EXIT_SUCCESS;
+  unsigned int bans = 0; 
   while(current != NULL) {
-    unsigned int bans = found_as(first, current->name);
+    if (bans == 0) {
+      bans = found_as(first, current->name);
+    }
+    verbose("searching for '%s' with bans '%x'\n", current->name, bans);
     current->match = find(current->name, bans);
+    bans=0;
     match* m = current->match;
     if (m==NULL) {
       //no match, abort
@@ -515,9 +532,12 @@ int find_loop(char* command) {
         //Executable, continue in case of canonical pathname 
         printf("'%s' is an executable\n", current->name);
         next_name = current->name;
+        bans = FIND_ALL & ~FIND_RESOLVE;
       } else {
+        //Regular file, continue in case of canonical pathname 
         printf("'%s' is a regular file\n", current->name);
         next_name = current->name;
+        bans = FIND_ALL & ~FIND_RESOLVE;
       }
     } else if(rm != NULL) {
       current->match_type=FIND_RESOLVE;
@@ -529,6 +549,7 @@ int find_loop(char* command) {
     current->done=1;
     if (next_name == NULL) {
       // target reached
+      verbose("target reached\n");
       assert(current->next == NULL);
       exit_status=EXIT_SUCCESS ;
       break;
@@ -542,12 +563,29 @@ int find_loop(char* command) {
   return exit_status;
 }
 
+int usage(void);
+int usage(void) {
+  char* msg;
+  asprintf(&msg, "Usage: %s [-v] command", program_name);
+  error(EXIT_OTHER_ERROR, 0, msg);
+}
+
 int main(int argc, char** argv)
 {
   program_name = argv[0];
-  if (argc < 2) {
-    error(EXIT_OTHER_ERROR, 0, "missing command name");
+  int opt;
+  while ((opt = getopt(argc, argv, "v")) != -1) {
+     switch (opt) {
+     case 'v':
+         verbose_flag_set = 1;
+         break;
+     default: 
+         usage();
+     }
   }
-  char* command = argv[1];
+  if (optind >= argc) {
+      usage();
+  }
+  char* command = argv[optind]; 
   return find_loop(command);
 }

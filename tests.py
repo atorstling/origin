@@ -18,7 +18,7 @@ def check(args, expected_code, expected_texts):
   return (cmd, out, err) 
 
 # no arguments
-print check("", 2, ["origin: missing command name"])
+print check("", 2, ["target/origin: Usage: target/origin [-v] command"])
 # non-existent
 print check("miss", 1, ["no match"]);
 # multi-level alias
