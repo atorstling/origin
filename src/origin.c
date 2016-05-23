@@ -516,6 +516,7 @@ int find_loop(char* command) {
         printf("'%s' is an executable\n", current->name);
         next_name = current->name;
       } else {
+        //Regular file, continue in case of canonical pathname 
         printf("'%s' is a regular file\n", current->name);
         next_name = current->name;
       }
