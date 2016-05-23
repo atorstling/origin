@@ -383,15 +383,15 @@ static unsigned int FIND_RESOLVE=1<<3;
 match *find(char* command, unsigned int bans);
 match *find(char* command, unsigned int bans) {
   match* m = mk_match();
-  if ((bans & FIND_FILE) == 0) {
-    m->file_match = find_file(command);
-    if (m->file_match != NULL) {
-      return m;
-    }
-  }
   if ((bans & FIND_TYPE) == 0) {
     m->type_match = find_type(command);
     if (m->type_match != NULL) {
+      return m;
+    }
+  }
+  if ((bans & FIND_FILE) == 0) {
+    m->file_match = find_file(command);
+    if (m->file_match != NULL) {
       return m;
     }
   }

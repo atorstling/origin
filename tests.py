@@ -54,5 +54,6 @@ print check("origin", 0,
 )
 print check("/", 0, 
             ["'/' is a regular file"]);
+print check(".", 0, ["'.' is built into shell '/bin/bash'"]);
 
 print "OK"
