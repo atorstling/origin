@@ -1,4 +1,4 @@
-# Track
+# Origin
 Track down the origin of a command - a recursive `which` on steroids
 
 # Examples
