@@ -32,7 +32,7 @@ clean:
 	rm -rf $(ODIR)/*
 
 analyze: 
-	scan-build --use-cc=clang make clean $(OUT)
+	scan-build --status-bugs --use-cc=clang make clean $(OUT)
 
 check: $(OUT)
 	./tests.py

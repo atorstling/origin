@@ -229,10 +229,17 @@ typedef struct builtin_match{
   char* shell;
 } builtin_match;
 
+typedef struct function_match{
+  char* shell;
+  char* definition; 
+} function_match;
+
 typedef struct type_match{
   alias_match* alias_match;
   builtin_match* builtin_match;
+  function_match* function_match;
 } type_match;
+
 
 
 void free_type_match(type_match *m);
@@ -300,12 +307,27 @@ type_match* find_type(char* command) {
   ssize_t read;
   type_match *m = NULL;
   while ((read = getline(&line, &rowlen, fp)) != -1) {
+    if(strstr(line, "is a function")) {
+      m = alloc(sizeof(type_match));
+      function_match* fm = alloc(sizeof(function_match));
+      fm->shell=strdup2(shell);
+      fm->definition=NULL; 
+      char* dest=fm->definition;
+      while ((read = getline(&dest, &rowlen, fp)) != -1) {
+        dest+=rowlen;
+      }
+      m->builtin_match=NULL;
+      m->alias_match=NULL;
+      m->function_match=fm;
+      break;
+    }
     if(strstr(line, "is a shell builtin")) {
       m = alloc(sizeof(type_match));
       builtin_match* bm = alloc(sizeof(builtin_match));
       bm->shell=strdup2(shell);
       m->builtin_match=bm;
       m->alias_match=NULL;
+      m->function_match=NULL;
       break;
     }
     char* alias_for=get_group(&alias_r, line, 2);
@@ -318,6 +340,7 @@ type_match* find_type(char* command) {
       m = alloc(sizeof(type_match));
       m->alias_match = am;
       m->builtin_match = 0;
+      m->function_match=NULL;
       break;
     }
     free(alias_for);
@@ -507,6 +530,7 @@ int find_loop(char* command) {
       current->match_type=FIND_TYPE;
       alias_match* am = tm->alias_match;
       builtin_match* bm = tm->builtin_match;
+      function_match* fcm = tm->function_match;
       if (am != NULL) {
         //Alias, follow
         printf("'%s' is an alias for '%s' in shell '%s': '%s'\n", current->name, am->alias_for, am->shell,  am->declaration);
@@ -515,7 +539,12 @@ int find_loop(char* command) {
         //Builtin, end
         printf("'%s' is built into shell '%s'\n", current->name, bm->shell);
         next_name = NULL;
-      }
+      } else if(fcm != NULL) {
+        //Function, end
+        printf("'%s' is a function in shell '%s':\n%s\n", current->name,
+               fcm->shell, fcm->definition);
+        next_name = NULL; 
+      } 
     } else if (pm != NULL) {
       //Command found in path
       printf("'%s' found in PATH as '%s'\n", current->name, pm->path);
