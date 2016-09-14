@@ -17,7 +17,7 @@ _OBJS=origin.o
 OBJS=$(patsubst %,$(ODIR)/%,$(_OBJS))
 PROFOUT=target/prof.out
 
-all: target $(OUT)
+all: analyze clean target check
 
 target:
 	mkdir target
@@ -32,7 +32,7 @@ clean:
 	rm -rf $(ODIR)/*
 
 analyze: 
-	scan-build --use-cc=clang make clean compile
+	scan-build --use-cc=clang make clean $(OUT)
 
 check: $(OUT)
 	./tests.py
