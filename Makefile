@@ -17,6 +17,8 @@ _OBJS=origin.o
 OBJS=$(patsubst %,$(ODIR)/%,$(_OBJS))
 PROFOUT=target/prof.out
 
+compile: $(OUT)
+
 all: analyze clean target check
 
 target:

@@ -58,7 +58,7 @@ print check(".", 0, ["'.' is built into shell '/bin/bash'"]);
 print check("afunction", 0, ["'afunction' is a function in shell '/bin/bash':",
                              "afunction ()",
                              "{",
-                             "  echo \"I am a function\""
+                             "    echo \"I am a function\"",
                              "}"])
 
 print "OK"

@@ -259,6 +259,12 @@ void free_type_match(type_match *m) {
     free(bm->shell);
     free(bm);
   }
+  if (m->function_match != NULL) {
+    function_match* fm = m->function_match;
+    free(fm->shell);
+    free(fm->definition);
+    free(fm);  
+  }
   free(m);
 }
 
@@ -312,10 +318,7 @@ type_match* find_type(char* command) {
       function_match* fm = alloc(sizeof(function_match));
       fm->shell=strdup2(shell);
       fm->definition=NULL; 
-      char* dest=fm->definition;
-      while ((read = getline(&dest, &rowlen, fp)) != -1) {
-        dest+=rowlen;
-      }
+      getdelim(&fm->definition, &rowlen, '\0', fp);
       m->builtin_match=NULL;
       m->alias_match=NULL;
       m->function_match=fm;
