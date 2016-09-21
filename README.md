@@ -43,10 +43,17 @@ Tested on latest Ubuntu and OS X. Just run
 make
 ```
 
-. Requires `clang` (should work with gcc though), `c11`, `POSIX.1-2008`, `X/Open 7`. Links google performance tools, but this can easily be disabled.
+. Requires `clang` (should work with gcc though), `c11`, `POSIX.1-2008`, `X/Open 7`. Links google performance tools, but this can easily be disabled. For a minimal build, run
+```
+make DEBUG=0 PROFILE=0 clean compile
+```
+, and for a full build with all checks run
+```
+make clean all
+```
 
 ##With Docker
-The easiest way of building is running in docker:
+You can also build and run in docker:
 ```
-./docker-build && ./docker-run make check
+./docker-build && ./docker-run python 
 ```

@@ -1,37 +1,51 @@
+CC=clang
+CFLAGS=-std=c11 -Weverything -Werror -Wno-format-nonliteral
+# 'make DEBUG=0' disables debug mode
 DEBUG ?= 1
 ifeq ($(DEBUG), 1)
-    CFLAGS=-O0 -g
+    CFLAGS+=-O0 -g
 else
-    CFLAGS=-O3 -Wno-disabled-macro-expansion
+    CFLAGS+=-O3 -Wno-disabled-macro-expansion
 endif
-CC=clang
-#CFLAGS=-std=c99 -pedantic-errors -Wall -Wextra -Wshadow -Wpointer-arith \
- -Wcast-qual -Wstrict-prototypes -Wmissing-prototypes -I.
-CFLAGS+=-std=c11 -D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L -D_XOPEN_SOURCE=700 -Weverything -Werror -Wno-format-nonliteral 
-# /usr/lib/libprofiler.so.0
-LFLAGS=-lprofiler
-OUT=target/origin
+UNAME := $(shell uname)
+# Comments about flags on Darwin vs Linux: 
+# https://lwn.net/Articles/590381/
+ifeq ($(UNAME), Linux)
+	CFLAGS+=-std=c11 -D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L -D_XOPEN_SOURCE=700 
+else
+	#Including Darwin
+	CFLAGS+=-std=c11
+endif
+# gperftools
+# 'make PROFILE=0' disables profiler mode
+PROFILE ?= 1
+ifeq ($PROFILE), 1)
+		LFLAGS=-lprofiler
+else
+		LFLAGS=
+endif
 ODIR=target
+OUT=$(ODIR)/origin
 SDIR=src
 _OBJS=origin.o
 OBJS=$(patsubst %,$(ODIR)/%,$(_OBJS))
-PROFOUT=target/prof.out
+PROFOUT=$(ODIR)/prof.out
 
 compile: $(OUT)
 
-all: analyze clean target check
+all: analyze check
 
-target:
-	mkdir target
+$(ODIR):
+	mkdir $(ODIR)
 
 $(OUT): $(OBJS)
 	$(CC) -o $@ $^ $(CFLAGS) $(LFLAGS) 
 
-$(ODIR)/%.o: $(SDIR)/%.c
+$(ODIR)/%.o: $(SDIR)/%.c $(ODIR)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 clean:
-	rm -rf $(ODIR)/*
+	rm -rf $(ODIR)
 
 analyze: 
 	scan-build --status-bugs --use-cc=clang make clean $(OUT)
@@ -40,7 +54,7 @@ check: $(OUT)
 	./tests.py
 
 $(PROFOUT): $(OUT)
-	CPUPROFILE=$(PROFOUT) CPUPROFILE_REALTIME=1 ./target/origin ll
+	CPUPROFILE=$(PROFOUT) CPUPROFILE_REALTIME=1 $(OUT) ll
 
 profile: $(PROFOUT)
 
