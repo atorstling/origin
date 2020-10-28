@@ -16,6 +16,21 @@ static int EXIT_OTHER_ERROR=2;
 static char* program_name;
 static int verbose_flag_set=0;
 
+#ifdef __MSYS__
+int asprintf(char **strp, const char *fmt, ...) {
+  va_list args;
+  va_start(args, fmt);
+  size_t allocated_len = 0;
+  char* formatted = vasnprintf(NULL, &allocated_len, fmt, args);
+  va_end(args);
+  if (formatted == NULL) {
+    return -1;
+  }
+  *strp = formatted;
+  return allocated_len;
+}
+#endif
+
 void error(int exit_code, int errnum, char* format, ...)__attribute__((noreturn));
 void error(int exit_code, int errnum, char* format, ...) {
   fflush(stdout);
