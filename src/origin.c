@@ -1,15 +1,20 @@
+#define __MSYS__
 #include <sys/stat.h>
 #include <limits.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <err.h>
+//#include <err.h>
 #include <errno.h>
 #include <regex.h>
 #include <assert.h>
 #include <unistd.h>
 #include <libgen.h>
 #include <stdarg.h>
+
+#define vfprintf __mingw_vfprintf
+#define asprintf __mingw_asprintf
+#define printf __mingw_printf
 
 static int EXIT_NO_MATCH=1;
 static int EXIT_OTHER_ERROR=2;
