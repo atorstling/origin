@@ -1,14 +1,18 @@
 #!/usr/bin/env python
-import subprocess;
-import os;
-from subprocess import Popen;
+import subprocess
+import os
+import sys
+from subprocess import Popen
 
-if os.name == 'nt':
-  exe_name = "target/origin.exe"
+if sys.platform == 'msys':
+  exe_name = "target/origin"
   bash_path = "/usr/bin/bash"
   ls_path = "/usr/bin/ls"
   uname_path = "/usr/bin/uname"
+  true_path = "/usr/bin/true.exe"
   sant_link_name = "sant_win"
+  sh_path = "/usr/bin/sh"
+  sh_resolve_path = "/usr/bin/sh"
 else:
   exe_name = "target/origin"
   bash_path = "/bin/bash"

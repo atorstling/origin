@@ -9,12 +9,12 @@ ifeq ($(DEBUG), 1)
 else
     CFLAGS+=-O3 -Wno-disabled-macro-expansion
 endif
-UNAME := $(shell uname)
+UNAME := $(shell uname -o)
 # Comments about flags on Darwin vs Linux: 
 # https://lwn.net/Articles/590381/
-ifeq ($(UNAME), Linux)
+ifeq ($(UNAME), GNU/Linux)
 	CFLAGS+=-std=c11 -D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L -D_XOPEN_SOURCE=700 
-else ifneq (,$(findstring MSYS_NT,$(UNAME)))
+else ifeq ($(UNAME), Msys)
 	CFLAGS+=-std=gnu11
 else
 	#Including Darwin
