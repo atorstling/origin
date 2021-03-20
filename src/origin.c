@@ -325,9 +325,8 @@ type_match* find_type(char* command) {
   }
   char* line = NULL;
   size_t rowlen = 0;
-  ssize_t read;
   type_match *m = NULL;
-  while ((read = getline(&line, &rowlen, fp)) != -1) {
+  while (getline(&line, &rowlen, fp) != -1) {
     if(strstr(line, "is a function")) {
       m = alloc(sizeof(type_match));
       function_match* fm = alloc(sizeof(function_match));
