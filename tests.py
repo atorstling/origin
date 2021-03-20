@@ -5,23 +5,20 @@ import sys
 from subprocess import Popen
 
 if sys.platform == 'msys':
-  exe_name = "target/origin"
   bash_path = "/usr/bin/bash"
-  ls_path = "/usr/bin/ls"
-  uname_path = "/usr/bin/uname"
   true_path = "/usr/bin/true.exe"
-  sant_link_name = "sant_win"
-  sh_path = "/usr/bin/sh"
   sh_resolve_path = "/usr/bin/sh"
 else:
-  exe_name = "target/origin"
   bash_path = "/bin/bash"
-  ls_path = "/usr/bin/ls"
-  uname_path = "/usr/bin/uname"
   true_path="/usr/bin/true"
-  sant_link_name = "sant"
-  sh_path = "/usr/bin/sh"
   sh_resolve_path = "/usr/bin/dash"
+
+sh_path = "/usr/bin/sh"
+uname_path = "/usr/bin/uname"
+ls_path = "/usr/bin/ls"
+exe_name = "target/origin"
+sant_link_name = "target/sant"
+os.symlink(true_path, sant_link_name)
 
 def check(args, expected_code, expected_texts):
   cmd = exe_name + " " + args
