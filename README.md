@@ -38,12 +38,12 @@ alext@smith:~/projects/origin$
 Only works with bash (contributions for other shells welcome). Will not read aliases from the current shell, but from a spawned sub-shell. This means that aliases and other commands configured for login shells (in `~/.bashrc` or otherwise) will be shown. Aliases only defined locally in the calling shell won't be shown.
 
 # Building
-Tested on latest Ubuntu and OS X. Just run 
+Tested on Ubuntu 20.04 LTS and Windows MSYS Mingw64. Just run 
 ```
 make
 ```
 
-. Requires `clang` (should work with gcc though), `c11`, `POSIX.1-2008`, `X/Open 7`. Links google performance tools, but this can easily be disabled. For a minimal build, run
+. Ubuntu build requires `clang` (should work with gcc though), `c11`, `POSIX.1-2008`, `X/Open 7`. Windows build requires Mingw64 and gcc. Links google performance tools, but this can easily be disabled. For a minimal build, run
 ```
 make DEBUG=0 PROFILE=0 clean compile
 ```
