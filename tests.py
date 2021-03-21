@@ -2,7 +2,13 @@
 import subprocess
 import os
 import sys
+import getpass
 from subprocess import Popen
+
+print("sys platform is %s" % sys.platform)
+chroot_command = "chroot"
+if sys.platform.startswith("linux"):
+  chroot_command = "fakechroot chroot"
 
 bash_path="/bin/bash"
 ls_path="/bin/ls"
@@ -17,8 +23,9 @@ def check(args, expected_code, expected_texts):
   # Since we move bash to /bin/bash
   child_env["SHELL"] = "/bin/bash"
   child_env["PATH"] += ":/bin"
-  child_env["HOME"] = "/home/alexa"
-  cmd = "chroot target/jail_root origin " + args
+  child_env["HOME"] = "/home/%s" % getpass.getuser()
+  cmd = "fakechroot chroot target/jail_root origin " + args
+  print("Running %s" % cmd)
   p = Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=child_env)
   code = p.wait()
   out, err = p.communicate()
