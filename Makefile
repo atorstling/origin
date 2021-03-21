@@ -23,8 +23,9 @@ endif
 # gperftools
 # 'make PROFILE=0' disables profiler mode
 PROFILE ?= 1
-ifeq ($PROFILE), 1)
+ifeq ($(PROFILE), 1)
 		LFLAGS=-lprofiler
+		CFLAGS+=-Wl,--no-as-needed
 else
 		LFLAGS=
 endif
