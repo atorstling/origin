@@ -24,9 +24,9 @@ class Fakechroot < Formula
     inreplace 'src/__opendir2.c', 'dirp->__dd_rewind = telldir(dirp);',
       '//dirp->__dd_rewind = telldir(dirp);'
     inreplace 'src/ftw.c', '# define FTW_FUNC_T __ftw_func_t',
-      '# define FTW_FUNC_T int (*) (const char *, const struct stat *, int)'
+      '# define FTW_FUNC_T(x) int (*x) (const char *, const struct stat *, int)'
     inreplace 'src/ftw.c', '# define NFTW_FUNC_T __nftw_func_t',
-      '# define NFTW_FUNC_T int (*) (const char *, const struct stat *, int, struct FTW *)'
+      '# define NFTW_FUNC_T(x) int (*x) (const char *, const struct stat *, int, struct FTW *)'
     inreplace 'src/ftw.c', 'FTW_SKIP_SUBTREE', '2'
     inreplace 'src/ftw.c', 'FTW_SKIP_SIBLINGS', '3'
     system "./configure", "--disable-silent-rules", "--prefix=#{prefix}"
