@@ -14,7 +14,6 @@ else ifeq ($(shell uname -o), GNU/Linux)
     PLATFORM=linux
 endif
 
-UNAME := $(shell uname -o)
 # Comments about flags on Darwin vs Linux: 
 # https://lwn.net/Articles/590381/
 ifeq ($(PLATFORM), linux)
