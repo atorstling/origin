@@ -24,9 +24,9 @@ class Fakechroot < Formula
     inreplace 'src/__opendir2.c', 'dirp->__dd_rewind = telldir(dirp);',
       '//dirp->__dd_rewind = telldir(dirp);'
     inreplace 'src/ftw.c', '# define FTW_FUNC_T __ftw_func_t',
-      'typedef int (*FTW_FUNC_T) (const char *, const struct stat *, int)'
+      'typedef int (*FTW_FUNC_T) (const char *, const struct stat *, int);'
     inreplace 'src/ftw.c', '# define NFTW_FUNC_T __nftw_func_t',
-      'typedef int (*NFTW_FUNC_T) (const char *, const struct stat *, int, struct FTW *)'
+      'typedef int (*NFTW_FUNC_T) (const char *, const struct stat *, int, struct FTW *);'
     inreplace 'src/ftw.c', 'FTW_STOP', '1'
     inreplace 'src/ftw.c', 'FTW_SKIP_SUBTREE', '2'
     inreplace 'src/ftw.c', 'FTW_SKIP_SIBLINGS', '3'
