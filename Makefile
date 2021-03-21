@@ -5,13 +5,22 @@ ifeq ($(DEBUG), 1)
 else
     CFLAGS+=-O3 -Wno-disabled-macro-expansion
 endif
+
+ifeq ($(shell uname), Darwin)
+    PLATFORM=macos
+else ifeq ($(shell uname -o), Msys)
+    PLATFORM=msys
+else ifeq ($(shell uname -o), GNU/Linux)
+    PLATFORM=linux
+endif
+
 UNAME := $(shell uname -o)
 # Comments about flags on Darwin vs Linux: 
 # https://lwn.net/Articles/590381/
-ifeq ($(UNAME), GNU/Linux)
+ifeq ($(PLATFORM), linux)
 	CC=clang
 	CFLAGS=-std=c11 -Werror -Wno-format-nonliteral -Weverything -D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L -D_XOPEN_SOURCE=700 
-else ifeq ($(UNAME), Msys)
+else ifeq ($(PLATFORM), msys)
 	CC=gcc
 	CFLAGS=-std=gnu11 -Werror -Wno-format-nonliteral
 else
@@ -23,14 +32,14 @@ endif
 # 'make PROFILE=0' disables profiler mode
 PROFILE ?= 1
 ifeq ($(PROFILE), 1)
-ifneq ($(UNAME), Msys)
+    ifneq ($(platform), msys)
 		LFLAGS=-lprofiler
-ifeq ($(CC), gcc)
+        ifeq ($(CC), gcc)
 		CFLAGS+=-Wl,--no-as-needed
-endif
-else
+        endif
+    else
 		LFLAGS=
-endif
+    endif
 endif
 ODIR=target
 OUT=$(ODIR)/origin
