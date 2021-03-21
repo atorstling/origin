@@ -24,7 +24,7 @@ def check(args, expected_code, expected_texts):
   child_env["SHELL"] = "/bin/bash"
   child_env["PATH"] += ":/bin"
   child_env["HOME"] = "/home/%s" % getpass.getuser()
-  cmd = "fakechroot chroot target/jail_root origin " + args
+  cmd = "%s target/jail_root origin %s" % (chroot_command, args)
   print("Running %s" % cmd)
   p = Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=child_env)
   code = p.wait()
