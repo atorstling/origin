@@ -4,38 +4,35 @@ import os
 import sys
 from subprocess import Popen
 
-if sys.platform == 'msys':
-  bash_path = "/usr/bin/bash"
-  true_path = "/usr/bin/true.exe"
-  sh_resolve_path = "/usr/bin/sh"
-else:
-  bash_path = "/bin/bash"
-  true_path="/usr/bin/true"
-  sh_resolve_path = "/usr/bin/dash"
-
-sh_path = "/usr/bin/sh"
-uname_path = "/usr/bin/uname"
-ls_path = "/usr/bin/ls"
-exe_name = "target/origin"
-sant_link_name = "target/sant"
-os.symlink(true_path, sant_link_name)
+bash_path="/bin/bash"
+ls_path="/bin/ls"
+uname_path="/bin/uname"
+sh_path="/bin/sh"
+sh_resolve_path="/bin/sh"
+sant_link_name="/bin/sant"
+true_path="/bin/true"
 
 def check(args, expected_code, expected_texts):
-  cmd = exe_name + " " + args
-  p = Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE);
-  code = p.wait();
-  out, err = p.communicate();
+  child_env = os.environ.copy()
+  # Since we move bash to /bin/bash
+  child_env["SHELL"] = "/bin/bash"
+  child_env["PATH"] += ":/bin"
+  child_env["HOME"] = "/home/alexa"
+  cmd = "chroot target/jail_root origin " + args
+  p = Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=child_env)
+  code = p.wait()
+  out, err = p.communicate()
   all = out + err
-  all_decoded = all.decode("utf-8");
+  all_decoded = all.decode("utf-8")
   if code != expected_code:
-    raise Exception("command '%s' exited with status %s, expected %s. Output:\n%s\n" % ( cmd, code, expected_code, all))
+    raise Exception("command '%s' exited with status %s, expected %s. Output:\n%s\n" % ( cmd, code, expected_code, all_decoded))
   for e in expected_texts:
     if not e in all_decoded:
-      raise Exception("expected \n===\n%s\n===\nin command output: \n===\n%s\n===\n" % (e, all))
+      raise Exception("expected \n===\n%s\n===\nin command output: \n===\n%s\n===\n" % (e, all_decoded))
   return (cmd, out, err) 
 
 # no arguments
-print(check("", 2, ["target/origin: Usage: target/origin [-v] command"]));
+print(check("", 2, ["origin: Usage: origin [-v] command"]));
 # non-existent
 print(check("miss", 1, ["no match"]));
 # multi-level alias
@@ -55,12 +52,8 @@ print(check("sh", 0,
             "'%s' is an executable" % sh_resolve_path]));
 # multi-step
 print(check(sant_link_name, 0,
-           ["'%s' is a symlink to '%s'" % (sant_link_name, true_path)
+           ["'%s' is a symlink to" % (sant_link_name)
             ]));
-print(check("origin", 0,
-            ["'origin' is a symlink to './%s'" % exe_name,
-"'./%s' is an executable" % exe_name,
-"'./%s' has canonical pathname '%s/%s'" % (exe_name, os.getcwd(), exe_name)]));
 print(check("/", 0,
             ["'/' is a regular file"]));
 print(check(".", 0, ["'.' is built into shell '%s'" % bash_path]));

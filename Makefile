@@ -55,7 +55,7 @@ analyze:
 	scan-build --status-bugs --use-cc=clang make clean $(OUT)
 
 check: $(OUT)
-	./tests.py
+	./run_tests.sh
 
 $(PROFOUT): $(OUT)
 	CPUPROFILE=$(PROFOUT) CPUPROFILE_REALTIME=1 $(OUT) ll
