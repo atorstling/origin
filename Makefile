@@ -12,7 +12,7 @@ ifeq ($(UNAME), GNU/Linux)
 	CC=clang
 	CFLAGS=-std=c11 -Werror -Wno-format-nonliteral -Weverything -D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L -D_XOPEN_SOURCE=700 
 else ifeq ($(UNAME), Msys)
-	CC=g++
+	CC=gcc
 	CFLAGS=-std=gnu11 -Werror -Wno-format-nonliteral
 else
 	#Including Darwin
@@ -23,12 +23,14 @@ endif
 # 'make PROFILE=0' disables profiler mode
 PROFILE ?= 1
 ifeq ($(PROFILE), 1)
+ifneq ($(UNAME), Msys)
 		LFLAGS=-lprofiler
-ifeq ($(UNAME), Msys)
+ifeq ($(CC), gcc)
 		CFLAGS+=-Wl,--no-as-needed
 endif
 else
 		LFLAGS=
+endif
 endif
 ODIR=target
 OUT=$(ODIR)/origin
