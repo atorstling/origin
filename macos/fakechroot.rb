@@ -27,7 +27,6 @@ class Fakechroot < Formula
       'typedef int (*FTW_FUNC_T) (const char *, const struct stat *, int)'
     inreplace 'src/ftw.c', '# define NFTW_FUNC_T __nftw_func_t',
       'typedef int (*NFTW_FUNC_T) (const char *, const struct stat *, int, struct FTW *)'
-    inreplace 'src/ftw.c', 'FTW_CONTINUE', '0'
     inreplace 'src/ftw.c', 'FTW_STOP', '1'
     inreplace 'src/ftw.c', 'FTW_SKIP_SUBTREE', '2'
     inreplace 'src/ftw.c', 'FTW_SKIP_SIBLINGS', '3'
