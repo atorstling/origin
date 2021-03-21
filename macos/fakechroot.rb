@@ -1,6 +1,6 @@
-# From https://gist.github.com/2bits/1848282
 require 'formula'
 
+# From https://gist.github.com/2bits/1848282
 class Fakechroot < Formula
   desc ''
   homepage 'https://github.com/fakechroot/fakechroot/wiki'
@@ -13,7 +13,7 @@ class Fakechroot < Formula
     #inreplace 'src/__opendir2.c', 'dd_td', '__dd_td'
     #inreplace 'src/__opendir2.c', 'dd_buf', '__dd_buf'
     #inreplace 'src/__opendir2.c', 'dd_fd', '__dd_fd'
-    #inreplace 'src/__opendir2.c', 'dd_loc', '__dd_loc'
+    inreplace 'src/__opendir2.c', 'dd_loc', '__dd_loc'
     #inreplace 'src/__opendir2.c', 'dd_size', '__dd_size'
     #inreplace 'src/__opendir2.c', 'dd_len', '__dd_len'
     #inreplace 'src/__opendir2.c', 'dd_seek', '__dd_seek'
