@@ -1,7 +1,3 @@
-#CC=clang
-#CFLAGS=-Weverything -Werror -Wno-format-nonliteral
-CC=gcc
-CFLAGS=-Werror -Wno-format-nonliteral
 # 'make DEBUG=0' disables debug mode
 DEBUG ?= 1
 ifeq ($(DEBUG), 1)
@@ -13,19 +9,24 @@ UNAME := $(shell uname -o)
 # Comments about flags on Darwin vs Linux: 
 # https://lwn.net/Articles/590381/
 ifeq ($(UNAME), GNU/Linux)
-	CFLAGS+=-std=c11 -D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L -D_XOPEN_SOURCE=700 
+	CC=clang
+	CFLAGS=-std=c11 -Werror -Wno-format-nonliteral -Weverything -D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L -D_XOPEN_SOURCE=700 
 else ifeq ($(UNAME), Msys)
-	CFLAGS+=-std=gnu11
+	CC=g++
+	CFLAGS=-std=gnu11 -Werror -Wno-format-nonliteral
 else
 	#Including Darwin
-	CFLAGS+=-std=c11
+	CC=clang
+	CFLAGS=-std=c11 -Werror -Wno-format-nonliteral -Weverything
 endif
 # gperftools
 # 'make PROFILE=0' disables profiler mode
 PROFILE ?= 1
 ifeq ($(PROFILE), 1)
 		LFLAGS=-lprofiler
+ifeq ($(UNAME), Msys)
 		CFLAGS+=-Wl,--no-as-needed
+endif
 else
 		LFLAGS=
 endif

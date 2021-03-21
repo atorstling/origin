@@ -310,9 +310,12 @@ void free_resolve_match(resolve_match* m) {
 typedef struct {
 	FILE* fp;
   int pid;
+  char pad[4];
 } open_process;
 
 // From https://stackoverflow.com/questions/26852198/getting-the-pid-from-popen
+open_process
+spawn_process(const char *shell, char* const argv[]);
 open_process
 spawn_process(const char *shell, char* const argv[])
 {
@@ -371,6 +374,7 @@ spawn_process(const char *shell, char* const argv[])
     }
 }
 
+int close_process(open_process p);
 int close_process(open_process p) {
 	if (p.pid == 0 && p.fp == NULL) {
 		return -1;
