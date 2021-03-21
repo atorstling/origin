@@ -7,7 +7,7 @@ from subprocess import Popen
 
 print("sys platform is %s" % sys.platform)
 chroot_command = "chroot"
-if sys.platform.startswith("linux"):
+if sys.platform.startswith("linux") or sys.platform == "darwin":
   chroot_command = "fakechroot chroot"
 
 bash_path="/bin/bash"
