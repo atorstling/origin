@@ -32,7 +32,7 @@ endif
 # 'make PROFILE=0' disables profiler mode
 PROFILE ?= 1
 ifeq ($(PROFILE), 1)
-    ifneq ($(platform), msys)
+    ifneq ($(PLATFORM), msys)
 		LFLAGS=-lprofiler
         ifeq ($(CC), gcc)
 		CFLAGS+=-Wl,--no-as-needed
