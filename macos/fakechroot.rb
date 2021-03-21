@@ -31,6 +31,7 @@ class Fakechroot < Formula
     inreplace 'src/ftw.c', 'FTW_SKIP_SUBTREE', '2'
     inreplace 'src/ftw.c', 'FTW_SKIP_SIBLINGS', '3'
     inreplace 'src/ftw.c', 'FTW_ACTIONRETVAL', '16'
+    inreplace 'src/statfs64.c', '#include <sys/statfs.h>', "#include <sys/param.h>\n#include <sys/mount.h>"
     system "./configure", "--disable-silent-rules", "--prefix=#{prefix}"
     system "make -j 1"
     system "make install"
