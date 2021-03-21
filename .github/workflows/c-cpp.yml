@@ -12,7 +12,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: install fakechroot
-      run: brew install ./macos/fakechroot.rb && brew link ./macos/fakechroot.rb
+      run: brew install --debug --verbose ./macos/fakechroot.rb
     - name: install dependencies
       run: brew install gperftools
     - name: make
