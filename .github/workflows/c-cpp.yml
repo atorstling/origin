@@ -7,15 +7,15 @@ on:
     branches: [ '**' ]
 
 jobs:
-  build-restricted:
-    runs-on: [windows-latest, macos-latest]
+  build-macos:
+    runs-on: [macos-latest]
     steps:
     - uses: actions/checkout@v2
     - name: make
       run: make
     - name: make check
       run: make check
-  build-full:
+  build-ubuntu:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
