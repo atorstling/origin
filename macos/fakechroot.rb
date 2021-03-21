@@ -21,6 +21,8 @@ class Fakechroot < Formula
     inreplace 'src/__opendir2.c', 'dd_flags', '__dd_flags'
     inreplace 'src/__opendir2.c', 'dirp->__dd_lock = NULL;',
                 'pthread_mutex_init(dirp->__dd_lock, NULL);'
+    inreplace 'src/__opendir2.c', 'dirp->__dd_rewind = telldir(dirp);',
+      '//dirp->__dd_rewind = telldir(dirp);'
     system "./configure", "--disable-silent-rules", "--prefix=#{prefix}"
     system "make -j 1"
     system "make install"
