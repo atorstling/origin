@@ -58,9 +58,10 @@ print(check("sh", 0,
             ["'sh' found in PATH as '%s'" % sh_path,
             "'%s' is an executable" % sh_resolve_path]));
 # multi-step
-print(check(sant_link_name, 0,
-           ["'%s' is a symlink to" % (sant_link_name)
-            ]));
+if not 'SKIP_SYMLINK_TESTS' in os.environ:
+    print(check(sant_link_name, 0,
+            ["'%s' is a symlink to" % (sant_link_name)
+             ]));
 print(check("/", 0,
             ["'/' is a regular file"]));
 print(check(".", 0, ["'.' is built into shell '%s'" % bash_path]));
