@@ -2,10 +2,11 @@
 require 'formula'
 
 class Fakechroot < Formula
+  desc ''
   homepage 'https://github.com/fakechroot/fakechroot/wiki'
   url 'https://github.com/downloads/fakechroot/fakechroot/fakechroot-2.16.tar.gz'
-  md5 '3ea5efb76664e787450e0cfcefc1b807'
-
+  sha256 '81c105e0878b55fbcf430235badcb31249d86ac435297910f411d9955dadf9c6'
+  license ''
 
   def install
     inreplace 'src/__opendir2.c', '__FBSDID', '//__FBSDID'
