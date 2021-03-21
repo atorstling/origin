@@ -25,7 +25,8 @@ else ifeq ($(PLATFORM), msys)
 else
 	#Including Darwin
 	CC=clang
-	CFLAGS=-std=c11 -Werror -Wno-format-nonliteral -Weverything
+	# The poison system directories flag is a workaround for https://github.com/dotnet/runtime/issues/41095
+	CFLAGS=-std=c11 -Werror -Wno-format-nonliteral -Weverything -Wno-poison-system-directories
 endif
 # gperftools
 # 'make PROFILE=0' disables profiler mode
