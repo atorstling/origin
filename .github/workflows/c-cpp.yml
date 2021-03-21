@@ -19,6 +19,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: install dependencies
+      run: sudo apt -y install clang python fakechroot libgoogle-perftools-dev google-perftools
     - name: make
       run: make
     - name: make check
