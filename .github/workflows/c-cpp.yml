@@ -11,6 +11,8 @@ jobs:
     runs-on: [macos-latest]
     steps:
     - uses: actions/checkout@v2
+    - name: install dependencies
+      run: brew install gperftools
     - name: make
       run: make
     - name: make check
