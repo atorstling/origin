@@ -29,6 +29,8 @@ jobs:
     - uses: msys2/setup-msys2@v2
       with:
         install: gcc make
+    - name: install dependencies
+      run: pacman -S python
     - name: make
       run: make
     - name: make check
