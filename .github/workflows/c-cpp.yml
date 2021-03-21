@@ -27,5 +27,3 @@ jobs:
       run: make check
     - name: make analyze
       run: make analyze
-    - name: make profile
-      run: make profile
