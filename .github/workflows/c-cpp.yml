@@ -25,9 +25,8 @@ jobs:
         shell: msys2 {0}
     runs-on: [windows-latest]
     env:
-      # Github Actions msys doesn't have symlinks enabled it seems
+      # enable symlinks in msys
       MSYS: 'winsymlinks:nativestrict'
-      #SKIP_SYMLINK_TESTS: 1
     steps:
     - uses: actions/checkout@v2
     - uses: msys2/setup-msys2@v2
