@@ -26,7 +26,8 @@ jobs:
     runs-on: [windows-latest]
     env:
       # Github Actions msys doesn't have symlinks enabled it seems
-      SKIP_SYMLINK_TESTS: 1
+      MSYS: 'winsymlinks:nativestrict'
+      #SKIP_SYMLINK_TESTS: 1
     steps:
     - uses: actions/checkout@v2
     - uses: msys2/setup-msys2@v2
