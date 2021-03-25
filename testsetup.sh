@@ -1,5 +1,5 @@
 #!/bin/bash -eu
-root="target/jail_root"
+root="target/jail"
 
 [ -d $root ] && rm -rf $root
 
