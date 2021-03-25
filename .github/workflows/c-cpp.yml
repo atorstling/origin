@@ -9,6 +9,8 @@ on:
 jobs:
   create-release:
     runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
     - name: create release
       uses: actions/create-release@v1
       env:
