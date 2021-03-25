@@ -1,3 +1,5 @@
+![example workflow](https://github.com/atorstling/origin/actions/workflows/c-cpp.yml/badge.svg)
+
 # Origin
 Track down the origin of a command - a recursive `which` on steroids
 
