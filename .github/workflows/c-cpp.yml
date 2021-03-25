@@ -101,7 +101,7 @@ jobs:
           asset_content_type: application/x-executable
 
   publish-release:
-    needs: [build-ubuntu, build-win, build-macos]
+    needs: [create-release,build-ubuntu,build-win,build-macos]
     runs-on: ubuntu-latest
     steps:
       - uses: eregon/publish-release@v1
