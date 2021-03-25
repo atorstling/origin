@@ -22,7 +22,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ github.ref }}
+        tag_name: macos ${{ github.ref }}
         release_name: macos ${{ github.ref }}
         draft: false
         prerelease: true 
@@ -50,7 +50,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ github.ref }}
+        tag_name: win ${{ github.ref }}
         release_name: win ${{ github.ref }}
         draft: false
         prerelease: true 
@@ -71,7 +71,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ github.ref }}
+        tag_name: linux ${{ github.ref }}
         release_name: linux ${{ github.ref }}
         draft: false
         prerelease: true 
