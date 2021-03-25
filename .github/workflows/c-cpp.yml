@@ -1,50 +1,52 @@
+---
 name: C/C++ CI
 
 on:
   push:
-    branches: [ '**' ]
+    branches: ['**']
   pull_request:
-    branches: [ '**' ]
+    branches: ['**']
 
 jobs:
   create-release:
     runs-on: ubuntu-latest
     outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-      id: ${{ steps.create_release.outputs.id }} 
+      upload_url: ${{steps.create_release.outputs.upload_url}}
+      id: ${{steps.create_release.outputs.id}}
     steps:
-    - uses: actions/checkout@v2
-    - name: create release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: release-${{ github.sha }}
-        release_name: release-${{ github.sha }}
-        draft: true
-        prerelease: true 
+      - uses: actions/checkout@v2
+      - name: create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: release-${{ github.sha }}
+          release_name: release-${{ github.sha }}
+          draft: true
+          prerelease: true
 
   build-macos:
     needs: create-release
     runs-on: [macos-latest]
     steps:
-    - uses: actions/checkout@v2
-    - name: install dependencies
-      run: ./prereqs-osx.sh
-    - name: make
-      run: make
-    - name: make check
-      run: make check
-    - name: upload release assets
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./target/origin
-        asset_name: origin
-        asset_content_type: application/x-mach-binary
+      - uses: actions/checkout@v2
+      - name: install dependencies
+        run: ./prereqs-osx.sh
+      - name: make
+        run: make
+      - name: make check
+        run: make check
+      - name: upload release assets
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./target/origin
+          asset_name: origin
+          asset_content_type: application/x-mach-binary
+
   build-win:
     needs: create-release
     defaults:
@@ -55,53 +57,55 @@ jobs:
       # enable symlinks in msys
       MSYS: 'winsymlinks:nativestrict'
     steps:
-    - uses: actions/checkout@v2
-    - uses: msys2/setup-msys2@v2
-      with:
-        install: gcc make
-    - name: install dependencies
-      run: pacman --noconfirm -S python
-    - name: make
-      run: make
-    - name: make check
-      run: make check
-    - name: upload release assets
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./target/origin.exe
-        asset_name: origin.exe
-        asset_content_type: application/x-msdownload
+      - uses: actions/checkout@v2
+      - uses: msys2/setup-msys2@v2
+        with:
+          install: gcc make
+      - name: install dependencies
+        run: pacman --noconfirm -S python
+      - name: make
+        run: make
+      - name: make check
+        run: make check
+      - name: upload release assets
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./target/origin.exe
+          asset_name: origin.exe
+          asset_content_type: application/x-msdownload
+
   build-ubuntu:
     needs: create-release
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
-    - name: install dependencies
-      run: sudo apt -y install clang clang-tools python fakechroot libgoogle-perftools-dev google-perftools
-    - name: make
-      run: make
-    - name: make check
-      run: make check
-    - name: make analyze
-      run: make analyze
-    - name: upload release assets
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./target/origin
-        asset_name: origin
-        asset_content_type: application/x-executable
+      - uses: actions/checkout@v2
+      - name: install dependencies
+        run: sudo apt -y install clang clang-tools python fakechroot libgoogle-perftools-dev google-perftools
+      - name: make
+        run: make
+      - name: make check
+        run: make check
+      - name: make analyze
+        run: make analyze
+      - name: upload release assets
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./target/origin
+          asset_name: origin
+          asset_content_type: application/x-executable
 
   publish-release:
     needs: [build-ubuntu, build-win, build-macos]
     runs-on: ubuntu-latest
-    - uses: eregon/publish-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create-release.outputs.id }}
+    steps:
+      - uses: eregon/publish-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.id }}
