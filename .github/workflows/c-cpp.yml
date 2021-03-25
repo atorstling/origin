@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
+      id: ${{ steps.create_release.outputs.id }} 
     steps:
     - uses: actions/checkout@v2
     - name: create release
@@ -21,7 +22,7 @@ jobs:
       with:
         tag_name: release-${{ github.sha }}
         release_name: release-${{ github.sha }}
-        draft: false
+        draft: true
         prerelease: true 
 
   build-macos:
@@ -95,3 +96,12 @@ jobs:
         asset_path: ./target/origin
         asset_name: origin
         asset_content_type: application/x-executable
+
+  publish-release:
+    runs-on: ubuntu-latest
+    needs: [build-ubuntu, build-win, build-macos]
+    - uses: eregon/publish-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.id }}
