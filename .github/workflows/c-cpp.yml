@@ -9,6 +9,8 @@ on:
 jobs:
   create-release:
     runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_relase.outputs.upload_url }}
     steps:
     - uses: actions/checkout@v2
     - name: create release
@@ -23,6 +25,7 @@ jobs:
         prerelease: true 
 
   build-macos:
+    needs: create-release
     runs-on: [macos-latest]
     steps:
     - uses: actions/checkout@v2
@@ -37,11 +40,12 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ jobs.create-release.steps.create_release.outputs.upload_url }}
+        upload_url: ${{ needs.jobs.create-release.outputs.upload_url }}
         asset_path: ./target/origin
         asset_name: origin
         asset_content_type: application/x-mach-binary
   build-win:
+    needs: create-release
     defaults:
       run:
         shell: msys2 {0}
@@ -65,11 +69,12 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ jobs.create-release.steps.create_release.outputs.upload_url }}
+        upload_url: ${{ needs.jobs.create-release.outputs.upload_url }}
         asset_path: ./target/origin
         asset_name: origin
         asset_content_type: application/x-msdownload
   build-ubuntu:
+    needs: create-release
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
@@ -86,7 +91,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ jobs.create-release.steps.create_release.outputs.upload_url }}
+        upload_url: ${{ needs.jobs.create-release.outputs.upload_url }}
         asset_path: ./target/origin
         asset_name: origin
         asset_content_type: application/x-executable
