@@ -1,0 +1,50 @@
+name: C/C++ CI
+
+on:
+  push:
+    branches: [ '**' ]
+  pull_request:
+    branches: [ '**' ]
+
+jobs:
+  build-macos:
+    runs-on: [macos-latest]
+    steps:
+    - uses: actions/checkout@v2
+    - name: install dependencies
+      run: ./prereqs-osx.sh
+    - name: make
+      run: make
+    - name: make check
+      run: make check
+  build-win:
+    defaults:
+      run:
+        shell: msys2 {0}
+    runs-on: [windows-latest]
+    env:
+      # enable symlinks in msys
+      MSYS: 'winsymlinks:nativestrict'
+    steps:
+    - uses: actions/checkout@v2
+    - uses: msys2/setup-msys2@v2
+      with:
+        install: gcc make
+    - name: install dependencies
+      run: pacman --noconfirm -S python
+    - name: make
+      run: make
+    - name: make check
+      run: make check
+  build-ubuntu:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: install dependencies
+      run: sudo apt -y install clang clang-tools python fakechroot libgoogle-perftools-dev google-perftools
+    - name: make
+      run: make
+    - name: make check
+      run: make check
+    - name: make analyze
+      run: make analyze

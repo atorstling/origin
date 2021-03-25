@@ -1,4 +1,5 @@
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <limits.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -306,6 +307,90 @@ void free_resolve_match(resolve_match* m) {
   free(m);
 }
 
+typedef struct {
+	FILE* fp;
+  int pid;
+  char pad[4];
+} open_process;
+
+// From https://stackoverflow.com/questions/26852198/getting-the-pid-from-popen
+open_process
+spawn_process(const char *shell, char* const argv[]);
+open_process
+spawn_process(const char *shell, char* const argv[])
+{
+    int fd[2];
+    if (pipe(fd) == -1) {
+       error(EXIT_OTHER_ERROR, errno, "Failed to create pipe");	
+    }
+
+    const int read_fd = fd[0];
+    const int write_fd = fd[1];
+
+    const int child_pid = fork();
+    if (child_pid == -1) {
+      // Follow popen convention and just return NULL on error
+		 	open_process p;
+			p.fp = NULL;
+			p.pid = 0;
+			return p;
+    } else if (child_pid == 0) {
+        // child
+
+        // child will only write, close read
+        if (close(read_fd) == -1) {
+          error(EXIT_OTHER_ERROR, errno, "Failed to close read fd on spawn process");	
+				}
+
+        // "bind" fd 1 (standard output) to our "write" end of pipe
+        if (dup2(write_fd,1) == -1) {
+          error(EXIT_OTHER_ERROR, errno, "Failed to dup2 stdout to write fd on spawn process");	
+        }
+
+        if (dup2(write_fd,2) == -1) {
+          error(EXIT_OTHER_ERROR, errno, "Failed to dup2 stderr to write fd on spawn process");	
+        }
+
+        // No longer needed, dup2 is sufficient
+        if (close(write_fd) == -1) {
+          error(EXIT_OTHER_ERROR, errno, "Failed to close write fd on spawn process");	
+        }
+
+        execv(shell, argv);
+        // This point is only reached on error
+        error(EXIT_OTHER_ERROR, errno, "Failed to exec in child process");	
+    } else {
+
+        // parent will only read, close write
+        if (close(write_fd) == -1) {
+          error(EXIT_OTHER_ERROR, errno, "Failed to close write fd on parent process");	
+        }
+
+        FILE* file = fdopen(read_fd, "r");
+				open_process p;
+				p.fp = file;
+				p.pid = child_pid;
+        return p;
+    }
+}
+
+int close_process(open_process p);
+int close_process(open_process p) {
+	if (p.pid == 0 && p.fp == NULL) {
+		return -1;
+	}
+	fclose(p.fp);
+
+	int stat = 0;
+	while (waitpid(p.pid, &stat, 0) == -1) {
+		if (errno != EINTR) {
+			return -1;
+		}
+	}
+	return stat;
+}
+
+
 type_match* find_type(char*);
 type_match* find_type(char* command) {
   char* shell = getenv("SHELL");
@@ -313,9 +398,10 @@ type_match* find_type(char* command) {
     error(EXIT_OTHER_ERROR, errno, "failed to read 'SHELL' environment variable");
   }
   char* type_command;
-  asprintf(&type_command, "%s -ic 'type %s' 2>&1", shell, command);
-  FILE *fp = popen(type_command, "r");
-  if (fp == NULL) {
+  asprintf(&type_command, "type %s", command);
+  char* args[] = {shell, "-ic", type_command, NULL};
+  open_process op = spawn_process(shell, args);
+  if (op.fp == NULL) {
     error(EXIT_OTHER_ERROR, errno, "failed to run shell command '%s'", type_command);
   }
   const char* alias_pattern = ".*is aliased to `(([^' ]*) [^']*)'";
@@ -326,13 +412,13 @@ type_match* find_type(char* command) {
   char* line = NULL;
   size_t rowlen = 0;
   type_match *m = NULL;
-  while (getline(&line, &rowlen, fp) != -1) {
+  while (getline(&line, &rowlen, op.fp) != -1) {
     if(strstr(line, "is a function")) {
       m = alloc(sizeof(type_match));
       function_match* fm = alloc(sizeof(function_match));
       fm->shell=strdup2(shell);
       fm->definition=NULL; 
-      getdelim(&fm->definition, &rowlen, '\0', fp);
+      getdelim(&fm->definition, &rowlen, '\0', op.fp);
       m->builtin_match=NULL;
       m->alias_match=NULL;
       m->function_match=fm;
@@ -364,7 +450,7 @@ type_match* find_type(char* command) {
   }
   free(line);
   regfree(&alias_r);
-  int child_status = pclose(fp);
+  int child_status = close_process(op);
   if (child_status == -1) {
     error(EXIT_OTHER_ERROR, errno, "could not wait for command '%s' to finish", type_command);
   }
