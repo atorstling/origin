@@ -71,8 +71,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./target/origin
-        asset_name: origin
+        asset_path: ./target/origin.exe
+        asset_name: origin.exe
         asset_content_type: application/x-msdownload
   build-ubuntu:
     needs: create-release
