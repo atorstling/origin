@@ -12,6 +12,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: create release
+      id: create_release
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -36,7 +37,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        upload_url: ${{ jobs.create-release.steps.create_release.outputs.upload_url }}
         asset_path: ./target/origin
         asset_name: origin
         asset_content_type: application/x-mach-binary
@@ -64,7 +65,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        upload_url: ${{ jobs.create-release.steps.create_release.outputs.upload_url }}
         asset_path: ./target/origin
         asset_name: origin
         asset_content_type: application/x-msdownload
@@ -85,7 +86,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        upload_url: ${{ jobs.create-release.steps.create_release.outputs.upload_url }}
         asset_path: ./target/origin
         asset_name: origin
         asset_content_type: application/x-executable
