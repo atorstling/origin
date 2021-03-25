@@ -44,7 +44,7 @@ jobs:
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
           asset_path: ./target/origin
-          asset_name: origin
+          asset_name: origin-mac
           asset_content_type: application/x-mach-binary
 
   build-win:
@@ -97,7 +97,7 @@ jobs:
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
           asset_path: ./target/origin
-          asset_name: origin
+          asset_name: origin-ubuntu
           asset_content_type: application/x-executable
 
   publish-release:
