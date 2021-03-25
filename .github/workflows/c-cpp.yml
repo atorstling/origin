@@ -11,10 +11,8 @@ jobs:
     runs-on: [macos-latest]
     steps:
     - uses: actions/checkout@v2
-    - name: install fakechroot
-      run: brew install --debug --verbose ./macos/fakechroot.rb
     - name: install dependencies
-      run: brew install gperftools
+      run: ./prereqs-osx.sh
     - name: make
       run: make
     - name: make check
