@@ -40,7 +40,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ needs.jobs.create-release.outputs.upload_url }}
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
         asset_path: ./target/origin
         asset_name: origin
         asset_content_type: application/x-mach-binary
@@ -69,7 +69,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ needs.jobs.create-release.outputs.upload_url }}
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
         asset_path: ./target/origin
         asset_name: origin
         asset_content_type: application/x-msdownload
@@ -91,7 +91,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ needs.jobs.create-release.outputs.upload_url }}
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
         asset_path: ./target/origin
         asset_name: origin
         asset_content_type: application/x-executable
