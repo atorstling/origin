@@ -7,6 +7,18 @@ on:
     branches: [ '**' ]
 
 jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    - name: create release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: release-${{ github.sha }}
+        release_name: release-${{ github.sha }}
+        draft: false
+        prerelease: true 
+
   build-macos:
     runs-on: [macos-latest]
     steps:
@@ -17,15 +29,15 @@ jobs:
       run: make
     - name: make check
       run: make check
-    - name: create release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: macos ${{ github.ref }}
-        release_name: macos ${{ github.ref }}
-        draft: false
-        prerelease: true 
+    - name: upload release assets
+      uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./target/origin
+          asset_name: origin
+          asset_content_type: application/x-mach-binary
   build-win:
     defaults:
       run:
@@ -45,15 +57,15 @@ jobs:
       run: make
     - name: make check
       run: make check
-    - name: create release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: win ${{ github.ref }}
-        release_name: win ${{ github.ref }}
-        draft: false
-        prerelease: true 
+    - name: upload release assets
+      uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./target/origin
+          asset_name: origin
+          asset_content_type: application/x-msdownload
   build-ubuntu:
     runs-on: ubuntu-20.04
     steps:
@@ -66,12 +78,12 @@ jobs:
       run: make check
     - name: make analyze
       run: make analyze
-    - name: create release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: linux ${{ github.ref }}
-        release_name: linux ${{ github.ref }}
-        draft: false
-        prerelease: true 
+    - name: upload release assets
+      uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./target/origin
+          asset_name: origin
+          asset_content_type: application/x-executable
