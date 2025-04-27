@@ -83,7 +83,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: install dependencies
-        run: sudo apt -y install clang clang-tools python fakechroot libgoogle-perftools-dev google-perftools
+        run: sudo apt -y install clang clang-tools python3 fakechroot libgoogle-perftools-dev google-perftools
       - name: make
         run: make
       - name: make check
