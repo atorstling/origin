@@ -21,7 +21,7 @@ ifeq ($(PLATFORM), linux)
 	CFLAGS=-std=c11 -Werror -Wno-format-nonliteral -Weverything -Wno-declaration-after-statement -Wno-unsafe-buffer-usage -Wwrite-strings -D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L -D_XOPEN_SOURCE=700
 else ifeq ($(PLATFORM), msys)
 	CC=gcc
-	CFLAGS=-std=gnu11 -Werror -Wno-format-nonliteral -Wwrite-strings
+	CFLAGS=-std=gnu11 -Werror -Wno-format-nonliteral -Wwrite-strings -Wall -Wextra -Wshadow -Wpedantic -Wno-unknown-pragmas
 else
 	#Including Darwin
 	CC=clang
