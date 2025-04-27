@@ -28,7 +28,7 @@ jobs:
 
   build-macos:
     needs: create-release
-    runs-on: [macos-latest]
+    runs-on: [macos-14]
     steps:
       - uses: actions/checkout@v2
       - name: install dependencies
