@@ -18,10 +18,10 @@ endif
 # https://lwn.net/Articles/590381/
 ifeq ($(PLATFORM), linux)
 	CC=clang
-	CFLAGS=-std=c11 -Werror -Wno-format-nonliteral -Weverything -D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L -D_XOPEN_SOURCE=700 
+	CFLAGS=-std=c11 -Werror -Wno-format-nonliteral -Weverything -Wno-declaration-after-statement -Wno-unsafe-buffer-usage -Wwrite-strings -D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L -D_XOPEN_SOURCE=700
 else ifeq ($(PLATFORM), msys)
 	CC=gcc
-	CFLAGS=-std=gnu11 -Werror -Wno-format-nonliteral
+	CFLAGS=-std=gnu11 -Werror -Wno-format-nonliteral -Wwrite-strings
 else
 	#Including Darwin
 	CC=clang
