@@ -32,8 +32,8 @@ int asprintf(char **strp, const char *fmt, ...) {
 }
 #endif
 
-void error(int exit_code, int errnum, char* format, ...)__attribute__((noreturn));
-void error(int exit_code, int errnum, char* format, ...) {
+void error(int exit_code, int errnum, const char* format, ...)__attribute__((noreturn));
+void error(int exit_code, int errnum, const char* format, ...) {
   fflush(stdout);
   fputs(program_name, stderr);
   fputs(": ", stderr);
@@ -49,8 +49,8 @@ void error(int exit_code, int errnum, char* format, ...) {
   exit(exit_code);
 }
 
-void verbose(char* format, ...);
-void verbose(char* format, ...) {
+void verbose(const char* format, ...);
+void verbose(const char* format, ...) {
   if (verbose_flag_set) {
     va_list args;
     va_start(args, format);
@@ -80,8 +80,8 @@ char* strdup2(const char* str) {
   return duped;
 }
 
-char* mk_path(char* dir, char* filename);
-char* mk_path(char* dir, char* filename) {
+char* mk_path(const char* dir, const char* filename);
+char* mk_path(const char* dir, const char* filename) {
   char* abs;
   if (asprintf(&abs, "%s/%s", dir, filename) == -1) {
     error(EXIT_OTHER_ERROR, errno, "could not format dirname");
@@ -97,11 +97,11 @@ typedef struct file_match {
   char pad[4];
 } file_match;
 
-file_match* mk_file_match(char* path, int executable, char* link_to);
-file_match* mk_file_match(char* path, int executable, char* link_to) {
+file_match* mk_file_match(const char* path, int executable, const char* link_to);
+file_match* mk_file_match(const char* path, int executable, const char* link_to) {
   file_match* fm = alloc(sizeof(file_match));
-  fm->path = path;
-  fm->link_to = link_to;
+  fm->path = strdup2(path);
+  fm->link_to = strdup2(link_to);
   fm->executable = executable;
   return fm;
 }
@@ -121,8 +121,8 @@ typedef struct path_match {
   char* path_segment;
 } path_match;
 
-path_match* mk_path_match(char* path, char* path_segment);
-path_match* mk_path_match(char* path, char* path_segment) {
+path_match* mk_path_match(const char* path, const char* path_segment);
+path_match* mk_path_match(const char* path, const char* path_segment) {
   path_match* pm = alloc(sizeof(path_match));
   pm->path = strdup2(path); 
   pm->path_segment = strdup2(path_segment);
@@ -139,8 +139,8 @@ void free_path_match(path_match* pm) {
   free(pm);
 }
 
-char* canonicalize(char* path, struct stat *sb);
-char* canonicalize(char* path, struct stat *sb) {
+char* canonicalize(const char* path, struct stat *sb);
+char* canonicalize(const char* path, struct stat *sb) {
   size_t content_size = (unsigned long) sb->st_size;
   size_t str_size = content_size + 1;
   char* linkname = alloc(str_size); 
@@ -148,9 +148,10 @@ char* canonicalize(char* path, struct stat *sb) {
   if (r == -1) {
     error(EXIT_OTHER_ERROR, errno, "could not read link '%s'", path);
   }
+  assert(r > 0);
+  assert(r < (long) str_size);
   linkname[r] = '\0';
   //linkname can be absolute or relative, see "path_resolution(7)"
-  assert(r > 0);
   if (linkname[0]=='/') {
     return linkname;
   } else {
@@ -163,34 +164,34 @@ char* canonicalize(char* path, struct stat *sb) {
   }
 }
 
-int exists_as_executable(char* path);
-int exists_as_executable(char* path) {
+int exists_as_executable(const char* path);
+int exists_as_executable(const char* path) {
   struct stat sb;
   return stat(path, &sb) == 0 && (sb.st_mode & S_IXUSR);
 }
 
-file_match* find_file(char* path);
-file_match* find_file(char* path) {
+file_match* find_file(const char* path);
+file_match* find_file(const char* path) {
   struct stat sb;
   if (lstat(path, &sb) == 0) {
     if (S_ISLNK(sb.st_mode)) {
       //link
       char* actualpath = canonicalize(path, &sb);
-      return mk_file_match(strdup2(path), 0, actualpath);
+      return mk_file_match(path, 0, actualpath);
     }
     else if (S_ISREG(sb.st_mode) && (sb.st_mode & S_IXUSR)) {
       //executable
-      return mk_file_match(strdup2(path), 1, NULL);
+      return mk_file_match(path, 1, NULL);
     } else {
-      return mk_file_match(strdup2(path), 0, NULL);
+      return mk_file_match(path, 0, NULL);
     }
   }
   return NULL;
 }
 
 
-path_match* find_in_path(char* command);
-path_match* find_in_path(char* command) {
+path_match* find_in_path(const char* command);
+path_match* find_in_path(const char* command) {
   if (strchr(command, '/') != NULL) {
     //don't match "/a/b" + "/" = "/a/b/"
     return NULL;
@@ -202,7 +203,7 @@ path_match* find_in_path(char* command) {
   // strtok modifies strings, so copy first
   char* path2 = strdup2(path);
   path_match* match=NULL;
-  for (char* e=strtok(path2, ":"); e!=NULL; e = strtok(NULL, ":")) {
+  for (const char* e=strtok(path2, ":"); e!=NULL; e = strtok(NULL, ":")) {
     char *fpath = mk_path(e, command);
     int exists = exists_as_executable(fpath);
     if (exists) {
@@ -315,9 +316,9 @@ typedef struct {
 
 // From https://stackoverflow.com/questions/26852198/getting-the-pid-from-popen
 open_process
-spawn_process(const char *shell, char* const argv[]);
+spawn_process(const char *shell, const char* argv[]);
 open_process
-spawn_process(const char *shell, char* const argv[])
+spawn_process(const char *shell, const char* argv[])
 {
     int fd[2];
     if (pipe(fd) == -1) {
@@ -356,7 +357,12 @@ spawn_process(const char *shell, char* const argv[])
           error(EXIT_OTHER_ERROR, errno, "Failed to close write fd on spawn process");	
         }
 
-        execv(shell, argv);
+	// Note: casting to mutable, but that's fine since execv won't modify
+	// despite requiring mutable arg, see https://stackoverflow.com/a/190208/83741
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
+        execv(shell, (char **) argv);
+#pragma clang diagnostic pop
         // This point is only reached on error
         error(EXIT_OTHER_ERROR, errno, "Failed to exec in child process");	
     } else {
@@ -391,15 +397,15 @@ int close_process(open_process p) {
 }
 
 
-type_match* find_type(char*);
-type_match* find_type(char* command) {
-  char* shell = getenv("SHELL");
+type_match* find_type(const char*);
+type_match* find_type(const char* command) {
+  const char* shell = getenv("SHELL");
   if (shell == NULL) {
     error(EXIT_OTHER_ERROR, errno, "failed to read 'SHELL' environment variable");
   }
   char* type_command;
   asprintf(&type_command, "type %s", command);
-  char* args[] = {shell, "-ic", type_command, NULL};
+  const char* args[] = {shell, "-ic", type_command, NULL};
   open_process op = spawn_process(shell, args);
   if (op.fp == NULL) {
     error(EXIT_OTHER_ERROR, errno, "failed to run shell command '%s'", type_command);
@@ -473,7 +479,7 @@ typedef struct match {
 } match;
 
 match* mk_match(void);
-match* mk_match() {
+match* mk_match(void) {
   match* m = alloc(sizeof(match));
   m->file_match=NULL;
   m->type_match=NULL;
@@ -495,8 +501,8 @@ void free_match(match* m) {
 }
 
 
-resolve_match* resolve(char* command);
-resolve_match* resolve(char* command) {
+resolve_match* resolve(const char* command);
+resolve_match* resolve(const char* command) {
   if (command==NULL) {
     error(EXIT_OTHER_ERROR, 0, "NULL command");
   }
@@ -518,8 +524,8 @@ static unsigned int FIND_PATH=1<<2;
 static unsigned int FIND_RESOLVE=1<<3;
 static unsigned int FIND_ALL=~0u;
 
-match *find(char* command, unsigned int bans);
-match *find(char* command, unsigned int bans) {
+match *find(const char* command, unsigned int bans);
+match *find(const char* command, unsigned int bans) {
   match* m = mk_match();
   if ((bans & FIND_TYPE) == 0) {
     m->type_match = find_type(command);
@@ -559,8 +565,8 @@ typedef struct cmd {
   match* match;
 } cmd;
 
-cmd* mk_cmd(char* name, cmd* next);
-cmd* mk_cmd(char* name, cmd* next) {
+cmd* mk_cmd(const char* name, cmd* next);
+cmd* mk_cmd(const char* name, cmd* next) {
   cmd* c = alloc(sizeof(cmd));
   c->name = strdup2(name);
   c->next = next;
@@ -570,8 +576,8 @@ cmd* mk_cmd(char* name, cmd* next) {
   return c;
 }
 
-cmd* maybe_mk_cmd(char* name, cmd* next);
-cmd* maybe_mk_cmd(char* name, cmd* next) {
+cmd* maybe_mk_cmd(const char* name, cmd* next);
+cmd* maybe_mk_cmd(const char* name, cmd* next) {
   if (name == NULL) {
     return NULL;
   }
@@ -590,8 +596,8 @@ void free_cmds(cmd* first) {
   } 
 }
 
-unsigned int found_as(cmd* first, char* name);
-unsigned int found_as(cmd* first, char* name) {
+unsigned int found_as(cmd* first, const char* name);
+unsigned int found_as(cmd* first, const char* name) {
   cmd* current = first;
   unsigned int matches = 0;
   while(current != NULL) {
@@ -603,8 +609,8 @@ unsigned int found_as(cmd* first, char* name) {
   return matches;
 }
 
-int find_loop(char* command);
-int find_loop(char* command) {
+int find_loop(const char* command);
+int find_loop(const char* command) {
   cmd *first = mk_cmd(command, NULL);
   cmd* current = first;
   int exit_status=EXIT_SUCCESS;
@@ -623,7 +629,7 @@ int find_loop(char* command) {
       exit_status=EXIT_NO_MATCH;
       break;
     }
-    char* next_name = NULL;
+    const char* next_name = NULL;
     type_match* tm = m->type_match;
     path_match* pm = m->path_match;
     file_match* fm = m->file_match;
