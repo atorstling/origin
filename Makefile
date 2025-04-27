@@ -26,7 +26,7 @@ else
 	#Including Darwin
 	CC=clang
 	# The poison system directories flag is a workaround for https://github.com/dotnet/runtime/issues/41095
-	CFLAGS=-std=c11 -Werror -Wno-format-nonliteral -Weverything -Wno-poison-system-directories
+	CFLAGS=-std=c11 -Werror -Wno-format-nonliteral -Weverything -Wno-declaration-after-statement -Wno-poison-system-directories
 endif
 # gperftools
 # 'make PROFILE=0' disables profiler mode
