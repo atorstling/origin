@@ -29,8 +29,8 @@ else
 	CFLAGS=-std=c11 -Werror -Wno-format-nonliteral -Weverything -Wno-declaration-after-statement -Wno-poison-system-directories
 endif
 # gperftools
-# 'make PROFILE=0' disables profiler mode
-PROFILE ?= 1
+# 'make PROFILE=1' enables profiler mode
+PROFILE ?= 0
 ifeq ($(PROFILE), 1)
     ifneq ($(PLATFORM), msys)
 		LFLAGS=-lprofiler
