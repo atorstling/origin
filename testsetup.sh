@@ -20,7 +20,7 @@ cp -r test/fixture $userhome
 mkdir $root/bin
 # used in tests
 cp $(which bash) $(which true) $(which sh) $(which dash) $(which uname) \
-  $(which ls) $(which strace) $(which ln) $root/bin
+	$(which ls) $(which strace) $(which ln) $root/bin
 cp target/origin $root/bin
 chmod +x $root/bin/*
 # all dynamic libraries

@@ -6,4 +6,4 @@ else
   ./testsetup.sh
 fi
 echo running tests
-python tests.py
+python3 tests.py
